@@ -1,4 +1,0 @@
-yo
-this
-is
-test.txt
