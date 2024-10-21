@@ -38,7 +38,7 @@ void interactive_mode(){
 
 			if (small_token_buffer.command_list[0] == NULL){
 				free_command_line(&small_token_buffer);
-				break;
+				continue;
 			}
 
 			// If chain to find command with small_token_buffer.command_list[0]
@@ -152,7 +152,7 @@ void file_mode(char *filename){
 
                         if (small_token_buffer.command_list[0] == NULL){
 				free_command_line(&small_token_buffer);
-                                break;
+                                continue;
                         }
 
                         // If chain to find command with small_token_buffer.command_list[0]
