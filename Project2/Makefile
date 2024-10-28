@@ -4,7 +4,7 @@ part1: part1.o string_parser.o
 	gcc -o part1 part1.o string_parser.o
 
 part2: part2.o string_parser.o
-	gcc -o part2 part1.o string_parser.o
+	gcc -o part2 part2.o string_parser.o
 
 %.o: %.c
 	gcc -c $<

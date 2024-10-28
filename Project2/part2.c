@@ -33,30 +33,32 @@ void file_mode(char *filename){
                 line_count++;
         }
         pid_t *process = (pid_t *)malloc(line_count * sizeof(pid_t));
+	rewind(inFPtr);
 
-        //loop until the file is over
+	//loop until the file is over
         while (getline (&line_buf, &len, inFPtr) != -1){
                 //tokenize line buffer, large token is seperated by ";"
                 large_token_buffer = str_filler (line_buf, " ");
 
                 // fork
-                process[line_num++] = fork();
+                process[line_num] = fork();
 
-                if (process < 0){
+                if (process[line_num] < 0){
                         fprintf(stderr, "fork failed\n");
                         exit(-1);
-                } else if (process == 0){
+                } else if (process[line_num] == 0){
                         // Child process: Set up to wait for SIGUSR1 signal
                         sigset_t sigset;
                         sigemptyset(&sigset);
                         sigaddset(&sigset, SIGUSR1);
+			sigprocmask(SIG_BLOCK, &sigset, NULL);
                         int sig;
                         sigwait(&sigset, &sig);  // Wait for SIGUSR1
 
                         execvp(large_token_buffer.command_list[0], large_token_buffer.command_list);
                         exit(0);
                 }
-
+		line_num = line_num + 1;
                 //free large token and reset variable
                 free_command_line (&large_token_buffer);
                 memset (&large_token_buffer, 0, 0);
@@ -66,20 +68,20 @@ void file_mode(char *filename){
         sleep(1);
 
         // Loop through proccess ID's and send SIGUSER1 signal to resume
-        for (int i = 0; i < line_num; i++) {
-                printf("MCP: Sending SIGUSR1 to process %d\n", pid_array[i]);
+        printf("Sending SIGUSR1 to all processes...\n");
+	for (int i = 0; i < line_num; i++) {
                 kill(process[i], SIGUSR1);
         }
 
         // Send SIGSTOP to all child processes to suspend them
+	printf("Sending SIGSTOP to process...\n");
         for (int i = 0; i < line_num; i++) {
-                printf("MCP: Sending SIGSTOP to process %d\n", pid_array[i]);
                 kill(process[i], SIGSTOP);
         }
 
         // Send SIGCONT to wake each process
+	printf("Sending SIGCONT to process...\n");
         for (int i = 0; i < line_num; i++) {
-                printf("MCP: Sending SIGCONT to process %d\n", pid_array[i]);
                 kill(process[i], SIGCONT);
         }
 
