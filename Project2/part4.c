@@ -163,7 +163,6 @@ void file_mode(char *filename){
 
         // Close and free malloc'd memory
         free(process);
-        free(system_cpu_time);
         fclose(inFPtr);
         free (line_buf);
 
