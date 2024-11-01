@@ -117,11 +117,6 @@ void file_mode(char *filename){
         // Malloc array
         process = (pid_t *)malloc(line_count * sizeof(pid_t));
 
-        // Initialize all values to 0
-        for (int i = 0; i < line_count; i++) {
-                system_cpu_time[i] = 0;
-        }
-
         //loop until the file is over
         while (getline (&line_buf, &len, inFPtr) != -1){
                 //tokenize line buffer, large token is seperated by ";"
