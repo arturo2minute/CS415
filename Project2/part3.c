@@ -20,7 +20,7 @@ void signal_handler(int sig){
         
         // Loop through proccesses
         for (i = 0; i < line_num; i++) {
-                int ret = kill(process[line_num], 0); //Null signal
+                int ret = kill(process[i], 0); // Null signal
 
                 if (ret == 0){
                         // Hasn't finished running
