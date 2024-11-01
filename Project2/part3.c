@@ -8,11 +8,27 @@
 
 #define _GNU_SOURCE
 
-pid_t child_process;
+pid_t *process;
+int line_num;
+int curr_process;
 
 void signal_handler(int sig){
-        kill(child_process, SIGUSR1);
-        alarm(1);
+        // Stop whats currenlty running
+        kill(process[curr_process], SIGSTOP);
+        
+        // Loop through proccesses
+        for (int i = 0; i < line_num; i++) {
+                int ret = kill(process[line_num], 0); //Null signal
+
+                if (ret == 0){
+                        // Hasn't finished running
+                        kill(process[i], SIGCONT);
+                }
+                alarm(1);
+        }
+
+        // Update current signal
+        curr_process = curr_process + 1
 }
 
 void file_mode(char *filename){
@@ -33,13 +49,14 @@ void file_mode(char *filename){
 
         command_line large_token_buffer;
 
-        int line_num = 0;
+        line_num = 0;
+        curr_process = 0;
 
         // Count number of lines
         while (getline(&line_buf, &len, inFPtr) != -1) {
                 line_count++;
         }
-        pid_t *process = (pid_t *)malloc(line_count * sizeof(pid_t));
+        process = (pid_t *)malloc(line_count * sizeof(pid_t));
         rewind(inFPtr);
 
         //loop until the file is over
@@ -47,14 +64,14 @@ void file_mode(char *filename){
                 //tokenize line buffer, large token is seperated by ";"
                 large_token_buffer = str_filler (line_buf, " ");
 
-                // fork
-                child_process = fork();
+                // fork parent process
+                process[line_num] = fork();
 
-                if (child_process < 0){
+                if (process[line_num] < 0){
                         fprintf(stderr, "fork failed\n");
                         exit(-1);
 
-                } else if (child_process == 0){
+                } else if (process[line_num] == 0){
                         // Child process: Set up to wait for SIGUSR1 signal
                         sigset_t sigset;
                         sigemptyset(&sigset);
@@ -67,7 +84,7 @@ void file_mode(char *filename){
                         exit(0);
 
                 } else{ // Parent Process
-                        signal(SIGALARM, signal_handler);
+                        signal(SIGALRM, signal_handler);
                         alarm(2);
                 }
 
