@@ -155,7 +155,7 @@ void file_mode(char *filename){
         for (int i = 0; i < line_num; i++) {
                 waitpid(process[i], &status, 0);
                 if (WIFEXITED(status) == 1){
-                        fprintf(stderr, "Process ID: %d finished finneshed running...\n", process[i]);
+                        //fprintf(stderr, "Process ID: %d finished finneshed running...\n", process[i]);
                 }
         }
 
