@@ -19,7 +19,7 @@ void print_process_info(pid_t pid) {
 
     FILE *fp = fopen(proc_path, "r");
     if (fp == NULL) {
-        perror("Failed to open /proc file");
+        perror("Process has finished running, no data to populate...");
         return;
     }
 
