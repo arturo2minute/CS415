@@ -8,6 +8,13 @@
 
 #define _GNU_SOURCE
 
+pid_t child_process;
+
+void signal_handler(int sig){
+        kill(child_process, SIGUSR1);
+        alarm(1);
+}
+
 void file_mode(char *filename){
         //opening file to read
         FILE *inFPtr;
@@ -41,48 +48,33 @@ void file_mode(char *filename){
                 large_token_buffer = str_filler (line_buf, " ");
 
                 // fork
-                process[line_num] = fork();
+                child_process = fork();
 
-                if (process[line_num] < 0){
+                if (child_process < 0){
                         fprintf(stderr, "fork failed\n");
                         exit(-1);
-                } else if (process[line_num] == 0){
+
+                } else if (child_process == 0){
                         // Child process: Set up to wait for SIGUSR1 signal
                         sigset_t sigset;
                         sigemptyset(&sigset);
-                        sigaddset(&sigset, SIGUSR1);
+                        sigaddset(&sigset, SIGCONT);
                         sigprocmask(SIG_BLOCK, &sigset, NULL);
                         int sig;
                         sigwait(&sigset, &sig);  // Wait for SIGUSR1
-
+                        printf("Child waiting for signal...\n");
                         execvp(large_token_buffer.command_list[0], large_token_buffer.command_list);
                         exit(0);
+
+                } else{ // Parent Process
+                        signal(SIGALARM, signal_handler);
+                        alarm(2);
                 }
+
                 line_num = line_num + 1;
                 //free large token and reset variable
                 free_command_line (&large_token_buffer);
                 memset (&large_token_buffer, 0, 0);
-        }
-
-        // Make sure children dont get sent before signals get sent
-        sleep(1);
-
-        // Loop through proccess ID's and send SIGUSER1 signal to resume
-        printf("Sending SIGUSR1 to all processes...\n");
-        for (int i = 0; i < line_num; i++) {
-                kill(process[i], SIGUSR1);
-        }
-
-        // Send SIGSTOP to all child processes to suspend them
-        printf("Sending SIGSTOP to process...\n");
-        for (int i = 0; i < line_num; i++) {
-                kill(process[i], SIGSTOP);
-        }
-
-        // Send SIGCONT to wake each process
-        printf("Sending SIGCONT to process...\n");
-        for (int i = 0; i < line_num; i++) {
-                kill(process[i], SIGCONT);
         }
 
         // Wait for all child processes to complete
