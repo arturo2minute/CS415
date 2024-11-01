@@ -8,6 +8,7 @@
 
 #define _GNU_SOURCE
 
+unsigned long *system_cpu_time;
 pid_t *process;
 int line_num;
 int curr_process;
@@ -37,6 +38,9 @@ void print_process_info(pid_t pid) {
     fscanf(fp, "%lu %ld", &vsize, &rss);             // Field 22 (vsize) and 23 (rss)
 
     fclose(fp);
+
+    // Update system CPU time for the process
+    system_cpu_time[index] = stime;
 
     // Display process info in table row format
     printf("%-10d %-20lu %-20lu %-15lu %-10ld\n",
@@ -82,6 +86,7 @@ void signal_handler(int sig){
 
         // Have if CPU time is above threshold set alarm(2) else set alarm(1)
         // Maybe have an array that matches process and is global to keep track of CPU time for each threshold
+        
         alarm(1);
 
         // Update current signal
@@ -113,8 +118,16 @@ void file_mode(char *filename){
         while (getline(&line_buf, &len, inFPtr) != -1) {
                 line_count++;
         }
-        process = (pid_t *)malloc(line_count * sizeof(pid_t));
         rewind(inFPtr);
+
+        // Malloc arrays
+        process = (pid_t *)malloc(line_count * sizeof(pid_t));
+        system_cpu_time = (unsigned long *)malloc(line_count * sizeof(unsigned long));
+
+        // Initialize all values to 0
+        for (int i = 0; i < line_count; i++) {
+                system_cpu_time[i] = 0;
+        }
 
         //loop until the file is over
         while (getline (&line_buf, &len, inFPtr) != -1){
@@ -162,6 +175,7 @@ void file_mode(char *filename){
 
         // Close and free malloc'd memory
         free(process);
+        free(system_cpu_time);
         fclose(inFPtr);
         free (line_buf);
 
