@@ -104,7 +104,13 @@ void file_mode(char *filename){
         }
 
         // Wait for all child processes to complete
-        while(wait(NULL) > 0);
+        int status;
+        for (int i = 0; i < line_num; i++) {
+                waitpid(process[i], &status, 0);
+                if (WIFEXITED(status) == 1){
+                        fprintf(stderr, "Process ID: %d finished finneshed running...\n", process[i]);
+                }
+        }
 
         // Close and free malloc'd memory
         free(process);
