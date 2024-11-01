@@ -88,10 +88,10 @@ void signal_handler(int sig){
         // Maybe have an array that matches process and is global to keep track of CPU time for each threshold
         // alarm(1);
         if (system_cpu_time[curr_process] > threshold) {
-                printf("Scheduler: High system CPU time for process %d, setting alarm to 2 seconds\n", process[curr_process]);
+                //printf("Scheduler: High system CPU time for process %d, setting alarm to 2 seconds\n", process[curr_process]);
                 alarm(2);
         } else {
-                printf("Scheduler: System CPU time below threshold for process %d, setting alarm to 1 second\n", process[curr_process]);
+                //printf("Scheduler: System CPU time below threshold for process %d, setting alarm to 1 second\n", process[curr_process]);
                 alarm(1);
         }
 
