@@ -11,6 +11,37 @@
 pid_t *process;
 int line_num;
 int curr_process;
+int cycle;
+
+void print_process_info(pid_t pid) {
+    char proc_path[64];
+    snprintf(proc_path, sizeof(proc_path), "/proc/%d/stat", pid);
+
+    FILE *fp = fopen(proc_path, "r");
+    if (fp == NULL) {
+        perror("Failed to open /proc file");
+        return;
+    }
+
+    int pid_num;
+    char comm[256];
+    char state;
+    unsigned long utime, stime, vsize;
+    long rss;
+
+    // Read specific fields from /proc/[pid]/stat
+    fscanf(fp, "%d %s %c", &pid_num, comm, &state);
+    for (int i = 0; i < 10; i++) fscanf(fp, "%*s");  // Skip fields 4-13
+    fscanf(fp, "%lu %lu", &utime, &stime);           // Fields 14 (utime) and 15 (stime)
+    for (int i = 0; i < 6; i++) fscanf(fp, "%*s");   // Skip fields 16-21
+    fscanf(fp, "%lu %ld", &vsize, &rss);             // Field 22 (vsize) and 23 (rss)
+
+    fclose(fp);
+
+    // Display process info in table row format
+    printf("%-10d %-20lu %-20lu %-15lu %-10ld\n",
+           pid_num, utime, stime, vsize, rss);
+}
 
 void signal_handler(int sig){
         int i = 0;
@@ -18,6 +49,21 @@ void signal_handler(int sig){
 
         // Stop whats currenlty running
         kill(process[curr_process], SIGSTOP);
+
+        printf("Scheduler: Suspended process %d\n", process[curr_process]);
+
+        // Clear screen and print table header
+        printf("\033[H\033[J");  // ANSI escape codes to clear screen
+        printf("Resource Usage per Process:\n");
+        printf("PID        CPU Time (User)      CPU Time (System)    Virtual Memory  RSS\n");
+        printf("------------------------------------------------------------------------------\n");
+
+        // Display resource usage for each child process in a table format
+        for (int k = 0; k < line_num; k++) {
+                if (process[k] != -1) { // Check if the process is still active
+                        print_process_info(process[k]);
+                }
+        }
         
         // Loop through processes, starting at next
         for (i = curr_process + 1; i < line_num + curr_process + 1; i++) {
@@ -33,6 +79,7 @@ void signal_handler(int sig){
                         break;
                 }
         }
+
 
         alarm(1);
 
@@ -104,7 +151,13 @@ void file_mode(char *filename){
         }
 
         // Wait for all child processes to complete
-        while(wait(NULL) > 0);
+        int status;
+        for (int i = 0; i < line_num; i++) {
+                waitpid(process[i], &status, 0);
+                if (WIFEXITED(status) == 1){
+                        fprintf(stderr, "Process ID: %d finished finneshed running...\n", process[i]);
+                }
+        }
 
         // Close and free malloc'd memory
         free(process);
