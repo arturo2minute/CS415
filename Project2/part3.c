@@ -13,22 +13,26 @@ int line_num;
 int curr_process;
 
 void signal_handler(int sig){
+        int i = 0;
+
         // Stop whats currenlty running
         kill(process[curr_process], SIGSTOP);
         
         // Loop through proccesses
-        for (int i = 0; i < line_num; i++) {
+        for (i = 0; i < line_num; i++) {
                 int ret = kill(process[line_num], 0); //Null signal
 
                 if (ret == 0){
                         // Hasn't finished running
                         kill(process[i], SIGCONT);
+                        break;
                 }
-                alarm(1);
         }
 
+        alarm(1);
+
         // Update current signal
-        curr_process = curr_process + 1;
+        curr_process = i;
 }
 
 void file_mode(char *filename){
@@ -85,7 +89,7 @@ void file_mode(char *filename){
 
                 } else{ // Parent Process
                         signal(SIGALRM, signal_handler);
-                        alarm(2);
+                        alarm(1);
                 }
 
                 line_num = line_num + 1;
