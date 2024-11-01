@@ -8,13 +8,11 @@
 
 #define _GNU_SOURCE
 
-unsigned long *system_cpu_time;
 pid_t *process;
 int line_num;
 int curr_process;
-int threshold = 200;
 
-void print_process_info(pid_t pid, int index) {
+void print_process_info(pid_t pid) {
     char proc_path[64];
     snprintf(proc_path, sizeof(proc_path), "/proc/%d/stat", pid);
 
@@ -39,9 +37,6 @@ void print_process_info(pid_t pid, int index) {
 
     fclose(fp);
 
-    // Update system CPU time for the process
-    system_cpu_time[index] = stime;
-
     // Display process info in table row format
     printf("%-10d %-20lu %-20lu %-15lu %-10ld\n",
            pid_num, utime, stime, vsize, rss);
@@ -65,17 +60,9 @@ void signal_handler(int sig){
         // Display resource usage for each child process in a table format
         for (int k = 0; k < line_num; k++) {
                 if (process[k] != -1) { // Check if the process is still active
-                        print_process_info(process[k], k);
+                        print_process_info(process[k]);
                 }
         }
-
-        // if (system_cpu_time[curr_process] > threshold) {
-        //         //printf("Scheduler: High system CPU time for process %d, setting alarm to 2 seconds\n", process[curr_process]);
-        //         alarm(2);
-        // } else {
-        //         //printf("Scheduler: System CPU time below threshold for process %d, setting alarm to 1 second\n", process[curr_process]);
-        //         alarm(1);
-        // }
         
         // Loop through processes, starting at next
         for (i = curr_process + 1; i < line_num + curr_process + 1; i++) {
@@ -94,14 +81,7 @@ void signal_handler(int sig){
 
         // Have if CPU time is above threshold set alarm(2) else set alarm(1)
         // Maybe have an array that matches process and is global to keep track of CPU time for each threshold
-        // alarm(1);
-        if (system_cpu_time[curr_process] > threshold) {
-                //printf("Scheduler: High system CPU time for process %d, setting alarm to 2 seconds\n", process[curr_process]);
-                alarm(2);
-        } else {
-                //printf("Scheduler: System CPU time below threshold for process %d, setting alarm to 1 second\n", process[curr_process]);
-                alarm(1);
-        }
+        alarm(1);
 
         // Update current signal
         curr_process = j;
@@ -134,9 +114,8 @@ void file_mode(char *filename){
         }
         rewind(inFPtr);
 
-        // Malloc arrays
+        // Malloc array
         process = (pid_t *)malloc(line_count * sizeof(pid_t));
-        system_cpu_time = (unsigned long *)malloc(line_count * sizeof(unsigned long));
 
         // Initialize all values to 0
         for (int i = 0; i < line_count; i++) {
