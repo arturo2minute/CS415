@@ -19,9 +19,7 @@ void signal_handler(int sig){
         // Stop whats currenlty running
         kill(process[curr_process], SIGSTOP);
         
-
-
-        // Loop through proccesses
+        // Loop through processes, starting at next
         for (i = curr_process + 1; i < line_num + curr_process + 1; i++) {
 
                 // Get mod
