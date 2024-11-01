@@ -80,7 +80,8 @@ void signal_handler(int sig){
                 }
         }
 
-
+        // Have if CPU time is above threshold set alarm(2) else set alarm(1)
+        // Maybe have an array that matches process and is global to keep track of CPU time for each threshold
         alarm(1);
 
         // Update current signal
