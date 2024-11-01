@@ -14,7 +14,7 @@ int line_num;
 int curr_process;
 int cycle;
 
-void print_process_info(pid_t pid) {
+void print_process_info(pid_t pid, int index) {
     char proc_path[64];
     snprintf(proc_path, sizeof(proc_path), "/proc/%d/stat", pid);
 
@@ -65,7 +65,7 @@ void signal_handler(int sig){
         // Display resource usage for each child process in a table format
         for (int k = 0; k < line_num; k++) {
                 if (process[k] != -1) { // Check if the process is still active
-                        print_process_info(process[k]);
+                        print_process_info(process[k], k);
                 }
         }
         
@@ -86,7 +86,7 @@ void signal_handler(int sig){
 
         // Have if CPU time is above threshold set alarm(2) else set alarm(1)
         // Maybe have an array that matches process and is global to keep track of CPU time for each threshold
-        
+
         alarm(1);
 
         // Update current signal
