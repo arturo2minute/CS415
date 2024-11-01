@@ -69,13 +69,13 @@ void signal_handler(int sig){
                 }
         }
 
-        if (system_cpu_time[curr_process] > threshold) {
-                //printf("Scheduler: High system CPU time for process %d, setting alarm to 2 seconds\n", process[curr_process]);
-                alarm(2);
-        } else {
-                //printf("Scheduler: System CPU time below threshold for process %d, setting alarm to 1 second\n", process[curr_process]);
-                alarm(1);
-        }
+        // if (system_cpu_time[curr_process] > threshold) {
+        //         //printf("Scheduler: High system CPU time for process %d, setting alarm to 2 seconds\n", process[curr_process]);
+        //         alarm(2);
+        // } else {
+        //         //printf("Scheduler: System CPU time below threshold for process %d, setting alarm to 1 second\n", process[curr_process]);
+        //         alarm(1);
+        // }
         
         // Loop through processes, starting at next
         for (i = curr_process + 1; i < line_num + curr_process + 1; i++) {
@@ -95,13 +95,13 @@ void signal_handler(int sig){
         // Have if CPU time is above threshold set alarm(2) else set alarm(1)
         // Maybe have an array that matches process and is global to keep track of CPU time for each threshold
         // alarm(1);
-        // if (system_cpu_time[curr_process] > threshold) {
-        //         //printf("Scheduler: High system CPU time for process %d, setting alarm to 2 seconds\n", process[curr_process]);
-        //         alarm(2);
-        // } else {
-        //         //printf("Scheduler: System CPU time below threshold for process %d, setting alarm to 1 second\n", process[curr_process]);
-        //         alarm(1);
-        // }
+        if (system_cpu_time[curr_process] > threshold) {
+                //printf("Scheduler: High system CPU time for process %d, setting alarm to 2 seconds\n", process[curr_process]);
+                alarm(2);
+        } else {
+                //printf("Scheduler: System CPU time below threshold for process %d, setting alarm to 1 second\n", process[curr_process]);
+                alarm(1);
+        }
 
         // Update current signal
         curr_process = j;
