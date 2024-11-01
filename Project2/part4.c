@@ -19,7 +19,7 @@ void print_process_info(pid_t pid) {
 
     FILE *fp = fopen(proc_path, "r");
     if (fp == NULL) {
-        perror("Process has finished running, no data to populate...");
+        printf("Process has finished running, no data to populate...\n");
         return;
     }
 
@@ -135,7 +135,7 @@ void file_mode(char *filename){
                         sigprocmask(SIG_BLOCK, &sigset, NULL);
                         int sig;
                         sigwait(&sigset, &sig);  // Wait for SIGUSR1
-                        printf("Child waiting for signal...\n");
+                        //printf("Child waiting for signal...\n");
                         execvp(large_token_buffer.command_list[0], large_token_buffer.command_list);
                         exit(0);
 
