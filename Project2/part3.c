@@ -14,6 +14,7 @@ int curr_process;
 
 void signal_handler(int sig){
         int i = 0;
+        int j = 0;
 
         // Stop whats currenlty running
         kill(process[curr_process], SIGSTOP);
@@ -24,7 +25,7 @@ void signal_handler(int sig){
         for (i = curr_process + 1; i < line_num + curr_process + 1; i++) {
 
                 // Get mod
-                int j = i%line_num;
+                j = i%line_num;
 
                 int ret = kill(process[j], 0); // Null signal
 
