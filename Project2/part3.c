@@ -28,7 +28,7 @@ void signal_handler(int sig){
         }
 
         // Update current signal
-        curr_process = curr_process + 1
+        curr_process = curr_process + 1;
 }
 
 void file_mode(char *filename){
