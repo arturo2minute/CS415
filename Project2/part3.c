@@ -18,13 +18,19 @@ void signal_handler(int sig){
         // Stop whats currenlty running
         kill(process[curr_process], SIGSTOP);
         
+
+
         // Loop through proccesses
-        for (i = 0; i < line_num; i++) {
-                int ret = kill(process[i], 0); // Null signal
+        for (i = curr_process + 1; i < line_num + curr_process + 1; i++) {
+
+                // Get mod
+                int j = i%line_num;
+
+                int ret = kill(process[j], 0); // Null signal
 
                 if (ret == 0){
                         // Hasn't finished running
-                        kill(process[i], SIGCONT);
+                        kill(process[j], SIGCONT);
                         break;
                 }
         }
@@ -32,7 +38,7 @@ void signal_handler(int sig){
         alarm(1);
 
         // Update current signal
-        curr_process = i;
+        curr_process = j;
 }
 
 void file_mode(char *filename){
