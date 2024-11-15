@@ -84,6 +84,8 @@ void file_mode(char *filename){
         pthread_mutex_init(&accounts[i].ac_lock, NULL);
     }
 
+    printf("Made it after the accounts!\n");
+
     // Print accounts to verify they were added correctly
     print_accounts(accounts, account_nums);
 
