@@ -51,6 +51,7 @@ void file_mode(char *filename){
     }
 
     printf("Made it into the accounts!\n");
+    printf("Account totals: %d\n", account_nums);
     // Loop to populate the accounts array (4 lines per account)
     for (int i = 0; i < account_nums; i++) {
     	printf("Account %d:\n", i);
