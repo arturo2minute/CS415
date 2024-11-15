@@ -27,7 +27,9 @@ void process_transaction(command_line large_token_buffer, account *accounts, int
     // Determine transaction type by the first token
     char *transaction_type = large_token_buffer.command_list[0];
 
-    if (strcmp(transaction_type, "T") == 0) {  // Transfer funds
+
+    // Transfer funds
+    if (strcmp(transaction_type, "T") == 0) {
         char *src_account = large_token_buffer.command_list[1];
         char *password = large_token_buffer.command_list[2];
         char *dest_account = large_token_buffer.command_list[3];
@@ -39,9 +41,33 @@ void process_transaction(command_line large_token_buffer, account *accounts, int
         // printf("  Destination Account: %s\n", dest_account);
         // printf("  Amount: %.2f\n", transfer_amount);
 
-        
+        // Find source account and destination account
+        account *src = NULL;
+        account *dest = NULL;
+        for (int i = 0; i < account_nums; i++) {
+            if (strcmp(accounts[i].account_number, src_account) == 0) {
+                src = &accounts[i];
+            }
+            if (strcmp(accounts[i].account_number, dest_account) == 0) {
+                dest = &accounts[i];
+            }
+        }
 
-    } else if (strcmp(transaction_type, "C") == 0) {  // Check balance
+        // Verify password and perform transfer if accounts are found
+        if (src && dest && strcmp(src->password, password) == 0) {
+            pthread_mutex_lock(&src->ac_lock);
+            pthread_mutex_lock(&dest->ac_lock);
+            src->balance -= transfer_amount;
+            dest->balance += transfer_amount;
+            src->transaction_tracter += transfer_amount;
+            pthread_mutex_unlock(&src->ac_lock);
+            pthread_mutex_unlock(&dest->ac_lock);
+        } else {
+            printf("Transfer failed: invalid account or password\n");
+        }
+
+    // Check balance
+    } else if (strcmp(transaction_type, "C") == 0) {
         char *account_num = large_token_buffer.command_list[1];
         char *password = large_token_buffer.command_list[2];
 
@@ -49,9 +75,26 @@ void process_transaction(command_line large_token_buffer, account *accounts, int
         // printf("Check Balance Transaction:\n");
         // printf("  Account: %s\n", account_num);
 
+        // Find the account
+        account *acc = NULL;
+        for (int i = 0; i < account_nums; i++) {
+            if (strcmp(accounts[i].account_number, account_num) == 0) {
+                acc = &accounts[i];
+                break;
+            }
+        }
 
+        // Verify password and display balance
+        if (acc && strcmp(acc->password, password) == 0) {
+            pthread_mutex_lock(&acc->ac_lock);
+            printf("Balance for account %s: %.2f\n", acc->account_number, acc->balance);
+            pthread_mutex_unlock(&acc->ac_lock);
+        } else {
+            printf("Check balance failed: invalid account or password\n");
+        }
 
-    } else if (strcmp(transaction_type, "D") == 0) {  // Deposit
+   	// Deposit
+    } else if (strcmp(transaction_type, "D") == 0) {
         char *account_num = large_token_buffer.command_list[1];
         char *password = large_token_buffer.command_list[2];
         double amount = atof(large_token_buffer.command_list[3]);
@@ -61,9 +104,27 @@ void process_transaction(command_line large_token_buffer, account *accounts, int
         // printf("  Account: %s\n", account_num);
         // printf("  Amount: %.2f\n", amount);
 
+        // Find the account
+        account *acc = NULL;
+        for (int i = 0; i < account_nums; i++) {
+            if (strcmp(accounts[i].account_number, account_num) == 0) {
+                acc = &accounts[i];
+                break;
+            }
+        }
 
+        // Verify password and perform deposit
+        if (acc && strcmp(acc->password, password) == 0) {
+            pthread_mutex_lock(&acc->ac_lock);
+            acc->balance += amount;
+            acc->transaction_tracter += amount;
+            pthread_mutex_unlock(&acc->ac_lock);
+        } else {
+            printf("Deposit failed: invalid account or password\n");
+        }
 
-    } else if (strcmp(transaction_type, "W") == 0) {  // Withdraw
+  	// Withdraw
+    } else if (strcmp(transaction_type, "W") == 0) {
         char *account_num = large_token_buffer.command_list[1];
         char *password = large_token_buffer.command_list[2];
         double amount = atof(large_token_buffer.command_list[3]);
@@ -73,7 +134,24 @@ void process_transaction(command_line large_token_buffer, account *accounts, int
         // printf("  Account: %s\n", account_num);
         // printf("  Amount: %.2f\n", amount);
 
+        // Find the account
+        account *acc = NULL;
+        for (int i = 0; i < account_nums; i++) {
+            if (strcmp(accounts[i].account_number, account_num) == 0) {
+                acc = &accounts[i];
+                break;
+            }
+        }
 
+        // Verify password and perform withdrawal
+        if (acc && strcmp(acc->password, password) == 0) {
+            pthread_mutex_lock(&acc->ac_lock);
+            acc->balance -= amount;
+            acc->transaction_tracter += amount;
+            pthread_mutex_unlock(&acc->ac_lock);
+        } else {
+            printf("Withdrawal failed: invalid account or password\n");
+        }
         
     }
 }
