@@ -2,6 +2,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "account.h"
 #include "string_parser.h"
 
