@@ -36,6 +36,38 @@ void file_mode(char *filename){
 	    }
     }
 
+    // Loop to populate the accounts array (4 lines per account)
+    for (int i = 0; i < account_nums; i++) {
+        // Skip index line
+        getline(&line_buf, &len, inFPtr);
+
+        // Read account number
+        if (getline(&line_buf, &len, inFPtr) != -1) {
+            strncpy(accounts[i].account_number, line_buf, 16);
+            accounts[i].account_number[16] = '\0'; // Ensure null termination
+        }
+
+        // Read password
+        if (getline(&line_buf, &len, inFPtr) != -1) {
+            strncpy(accounts[i].password, line_buf, 8);
+            accounts[i].password[8] = '\0'; // Ensure null termination
+        }
+
+        // Read balance
+        if (getline(&line_buf, &len, inFPtr) != -1) {
+            accounts[i].balance = atof(line_buf);
+        }
+
+        // Read reward rate
+        if (getline(&line_buf, &len, inFPtr) != -1) {
+            accounts[i].reward_rate = atof(line_buf);
+        }
+
+        // Initialize other fields
+        accounts[i].transaction_tracter = 0.0;
+        pthread_mutex_init(&accounts[i].ac_lock, NULL);
+    }
+
 	command_line large_token_buffer;
 	command_line small_token_buffer;
 
