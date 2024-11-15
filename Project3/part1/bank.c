@@ -33,26 +33,39 @@ void process_transaction(command_line large_token_buffer, account *accounts, int
         char *dest_account = large_token_buffer.command_list[3];
         double transfer_amount = atof(large_token_buffer.command_list[4]);
 
-        
+        // Print transfer details
+        printf("Transfer Transaction:\n");
+        printf("  Source Account: %s\n", src_account);
+        printf("  Destination Account: %s\n", dest_account);
+        printf("  Amount: %.2f\n", transfer_amount);
 
     } else if (strcmp(transaction_type, "C") == 0) {  // Check balance
         char *account_num = large_token_buffer.command_list[1];
         char *password = large_token_buffer.command_list[2];
 
-        
+        // Print check balance details
+        printf("Check Balance Transaction:\n");
+        printf("  Account: %s\n", account_num);
 
     } else if (strcmp(transaction_type, "D") == 0) {  // Deposit
         char *account_num = large_token_buffer.command_list[1];
         char *password = large_token_buffer.command_list[2];
         double amount = atof(large_token_buffer.command_list[3]);
 
-        
+        // Print deposit details
+        printf("Deposit Transaction:\n");
+        printf("  Account: %s\n", account_num);
+        printf("  Amount: %.2f\n", amount);
 
     } else if (strcmp(transaction_type, "W") == 0) {  // Withdraw
         char *account_num = large_token_buffer.command_list[1];
         char *password = large_token_buffer.command_list[2];
         double amount = atof(large_token_buffer.command_list[3]);
 
+        // Print withdrawal details
+        printf("Withdrawal Transaction:\n");
+        printf("  Account: %s\n", account_num);
+        printf("  Amount: %.2f\n", amount);
         
     }
 }
