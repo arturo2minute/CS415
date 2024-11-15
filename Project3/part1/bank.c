@@ -20,6 +20,8 @@ void file_mode(char *filename){
 	//declear line_buffer
 	size_t len = 128;
 	char* line_buf = malloc (len);
+	account *accounts = NULL;
+	int account_nums = 0;
 
 	// Read the first line to get the integer
     if (getline(&line_buf, &len, inFPtr) != -1) {
@@ -27,7 +29,7 @@ void file_mode(char *filename){
         int account_nums = atoi(line_buf);
 
         // Allocate memory for an array of `account` structs
-	    account *accounts = (account *)malloc(account_nums * sizeof(account));
+	    accounts = (account *)malloc(account_nums * sizeof(account));
 	    if (accounts == NULL) {
 	        fprintf(stderr, "Error: Memory allocation failed\n");
 	        exit(EXIT_FAILURE);
@@ -56,7 +58,7 @@ void file_mode(char *filename){
            	}
 
            	// TODO:
-           	
+
 
            	//free smaller tokens and reset variable
 			free_command_line(&small_token_buffer);
