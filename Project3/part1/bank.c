@@ -53,6 +53,7 @@ void file_mode(char *filename){
     printf("Made it into the accounts!\n");
     // Loop to populate the accounts array (4 lines per account)
     for (int i = 0; i < account_nums; i++) {
+    	printf("Account %d:\n", i);
         // Skip index line
         getline(&line_buf, &len, inFPtr);
 
