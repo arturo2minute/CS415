@@ -17,6 +17,21 @@ void print_accounts(account *accounts, int account_nums) {
     }
 }
 
+// Function to print final balances to an output file
+void print_final_balances(account *accounts, int account_nums, const char *output_filename) {
+    FILE *outFPtr = fopen(output_filename, "w");
+    if (outFPtr == NULL) {
+        fprintf(stderr, "Error: Could not open output file %s\n", output_filename);
+        exit(EXIT_FAILURE);
+    }
+
+    for (int i = 0; i < account_nums; i++) {
+        fprintf(outFPtr, "%d balance: %.2f\n", i, accounts[i].balance);
+    }
+
+    fclose(outFPtr);
+}
+
 
 void process_transaction(command_line large_token_buffer, account *accounts, int account_nums) {
     // Ensure the first token exists (transaction type)
@@ -246,6 +261,9 @@ void file_mode(char *filename){
 		memset (&large_token_buffer, 0, 0);
 
 	}
+
+	// Print final balances to an output file
+    print_final_balances(accounts, account_nums, "output.txt");
 
 	// Close and free buffer and accounts
 	free(accounts);
