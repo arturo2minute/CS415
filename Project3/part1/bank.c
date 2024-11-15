@@ -6,7 +6,11 @@
 #include "account.h"
 #include "string_parser.h"
 
-void print_accounts(account *accounts, int account_nums) {
+account *accounts = NULL;
+int account_nums = 0;
+
+
+void print_accounts() {
     for (int i = 0; i < account_nums; i++) {
         printf("Account %d:\n", i);
         printf("  Account Number: %s", accounts[i].account_number);  // `strncpy` will add '\0', so no extra newline needed
@@ -18,7 +22,7 @@ void print_accounts(account *accounts, int account_nums) {
 }
 
 // Function to print final balances to an output file
-void print_final_balances(account *accounts, int account_nums, const char *output_filename) {
+void print_final_balances(const char *output_filename) {
     FILE *outFPtr = fopen(output_filename, "w");
     if (outFPtr == NULL) {
         fprintf(stderr, "Error: Could not open output file %s\n", output_filename);
@@ -32,8 +36,26 @@ void print_final_balances(account *accounts, int account_nums, const char *outpu
     fclose(outFPtr);
 }
 
+void* update_balance(){
 
-void process_transaction(command_line large_token_buffer, account *accounts, int account_nums) {
+	// Apply rewards to all accounts
+	for (int i = 0; i < account_nums: i++){
+
+		// Update balance based on reward rate and transaction tracker
+        double reward = accounts[i].transaction_tracter * accounts[i].reward_rate;
+
+        // Add reward to balance
+        accounts[i].balance += reward;
+
+        // Reset the transaction tracker after applying the reward
+        accounts[i].transaction_tracter = 0.0;
+
+	}
+
+}
+
+
+void process_transaction(command_line large_token_buffer) {
     // Ensure the first token exists (transaction type)
     if (large_token_buffer.command_list[0] == NULL) {
         return;
@@ -70,13 +92,9 @@ void process_transaction(command_line large_token_buffer, account *accounts, int
 
         // Verify password and perform transfer if accounts are found
         if (src && dest && strcmp(src->password, password) == 0) {
-            pthread_mutex_lock(&src->ac_lock);
-            pthread_mutex_lock(&dest->ac_lock);
             src->balance -= transfer_amount;
             dest->balance += transfer_amount;
             src->transaction_tracter += transfer_amount;
-            pthread_mutex_unlock(&src->ac_lock);
-            pthread_mutex_unlock(&dest->ac_lock);
         }
 
     // Check balance
@@ -98,11 +116,9 @@ void process_transaction(command_line large_token_buffer, account *accounts, int
         }
 
         // Verify password and display balance
-        if (acc && strcmp(acc->password, password) == 0) {
-            pthread_mutex_lock(&acc->ac_lock);
-            printf("Balance for account %s: %.2f\n", acc->account_number, acc->balance);
-            pthread_mutex_unlock(&acc->ac_lock);
-        }
+        // if (acc && strcmp(acc->password, password) == 0) {
+        //     printf("Balance for account %s: %.2f\n", acc->account_number, acc->balance);
+        // }
 
    	// Deposit
     } else if (strcmp(transaction_type, "D") == 0) {
@@ -126,10 +142,8 @@ void process_transaction(command_line large_token_buffer, account *accounts, int
 
         // Verify password and perform deposit
         if (acc && strcmp(acc->password, password) == 0) {
-            pthread_mutex_lock(&acc->ac_lock);
             acc->balance += amount;
             acc->transaction_tracter += amount;
-            pthread_mutex_unlock(&acc->ac_lock);
         }
 
   	// Withdraw
@@ -154,10 +168,8 @@ void process_transaction(command_line large_token_buffer, account *accounts, int
 
         // Verify password and perform withdrawal
         if (acc && strcmp(acc->password, password) == 0) {
-            pthread_mutex_lock(&acc->ac_lock);
             acc->balance -= amount;
             acc->transaction_tracter += amount;
-            pthread_mutex_unlock(&acc->ac_lock);
         }
         
     }
@@ -178,8 +190,6 @@ void file_mode(char *filename){
 	//declear line_buffer
 	size_t len = 128;
 	char* line_buf = malloc (len);
-	account *accounts = NULL;
-	int account_nums = 0;
 
 	// Read the first line to get the integer
     if (getline(&line_buf, &len, inFPtr) != -1) {
@@ -227,7 +237,7 @@ void file_mode(char *filename){
     }
 
     // // Print accounts for testing
-    // print_accounts(accounts, account_nums);
+    // print_accounts();
 
 	command_line large_token_buffer;
 
@@ -246,7 +256,7 @@ void file_mode(char *filename){
 	    }
 
 	    // Call process_transaction with the tokenized line and account information
-    	process_transaction(large_token_buffer, accounts, account_nums);
+    	process_transaction(large_token_buffer);
 
 		//free large token and reset variable
 		free_command_line (&large_token_buffer);
@@ -254,8 +264,11 @@ void file_mode(char *filename){
 
 	}
 
-	// Print final balances to an output file
-    print_final_balances(accounts, account_nums, "output.txt");
+	// Update Rewards
+    update_balance();
+
+    // Print final balances to an output file
+    print_final_balances("output.txt");
 
 	// Close and free buffer and accounts
 	free(accounts);
