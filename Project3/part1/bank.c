@@ -23,8 +23,15 @@ void file_mode(char *filename){
 
 	// Read the first line to get the integer
     if (getline(&line_buf, &len, inFPtr) != -1) {
-        int first_line_int = atoi(line_buf);  // Convert first line to an integer
-        
+    	// Convert first line to an integer
+        int account_nums = atoi(line_buf);
+
+        // Allocate memory for an array of `account` structs
+	    account *accounts = (account *)malloc(account_nums * sizeof(account));
+	    if (accounts == NULL) {
+	        fprintf(stderr, "Error: Memory allocation failed\n");
+	        exit(EXIT_FAILURE);
+	    }
     }
 
 	command_line large_token_buffer;
@@ -49,7 +56,7 @@ void file_mode(char *filename){
            	}
 
            	// TODO:
-
+           	
 
            	//free smaller tokens and reset variable
 			free_command_line(&small_token_buffer);
@@ -63,7 +70,8 @@ void file_mode(char *filename){
 
 	}
 
-	// Close and free buffer
+	// Close and free buffer and accounts
+	free(accounts);
 	fclose(inFPtr);
 	free (line_buf);
 
