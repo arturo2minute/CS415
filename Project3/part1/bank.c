@@ -39,7 +39,7 @@ void print_final_balances(const char *output_filename) {
 void* update_balance(){
 
 	// Apply rewards to all accounts
-	for (int i = 0; i < account_nums: i++){
+	for (int i = 0; i < account_nums; i++){
 
 		// Update balance based on reward rate and transaction tracker
         double reward = accounts[i].transaction_tracter * accounts[i].reward_rate;
