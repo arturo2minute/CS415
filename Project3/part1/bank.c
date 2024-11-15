@@ -40,7 +40,7 @@ void file_mode(char *filename){
 	// Read the first line to get the integer
     if (getline(&line_buf, &len, inFPtr) != -1) {
     	// Convert first line to an integer
-        int account_nums = atoi(line_buf);
+        account_nums = atoi(line_buf);
 
         // Allocate memory for an array of `account` structs
 	    accounts = (account *)malloc(account_nums * sizeof(account));
