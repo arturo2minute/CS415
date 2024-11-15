@@ -21,7 +21,6 @@ void print_accounts() {
     }
 }
 
-// Function to print final balances to an output file
 void print_final_balances(const char *output_filename) {
     FILE *outFPtr = fopen(output_filename, "w");
     if (outFPtr == NULL) {
@@ -30,8 +29,12 @@ void print_final_balances(const char *output_filename) {
     }
 
     for (int i = 0; i < account_nums; i++) {
-        fprintf(outFPtr, "%d balance: %.2f\n", i, accounts[i].balance);
+        // Use tab after "balance:" and format to two decimal places
+        fprintf(outFPtr, "%d balance:\t%.2f\n\n", i, accounts[i].balance);
     }
+
+    // Add two extra newlines at the end of the file
+    fprintf(outFPtr, "\n\n");
 
     fclose(outFPtr);
 }
