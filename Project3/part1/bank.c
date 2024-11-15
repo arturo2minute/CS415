@@ -77,8 +77,6 @@ void process_transaction(command_line large_token_buffer, account *accounts, int
             src->transaction_tracter += transfer_amount;
             pthread_mutex_unlock(&src->ac_lock);
             pthread_mutex_unlock(&dest->ac_lock);
-        } else {
-            printf("Transfer failed: invalid account or password\n");
         }
 
     // Check balance
@@ -104,8 +102,6 @@ void process_transaction(command_line large_token_buffer, account *accounts, int
             pthread_mutex_lock(&acc->ac_lock);
             printf("Balance for account %s: %.2f\n", acc->account_number, acc->balance);
             pthread_mutex_unlock(&acc->ac_lock);
-        } else {
-            printf("Check balance failed: invalid account or password\n");
         }
 
    	// Deposit
@@ -134,8 +130,6 @@ void process_transaction(command_line large_token_buffer, account *accounts, int
             acc->balance += amount;
             acc->transaction_tracter += amount;
             pthread_mutex_unlock(&acc->ac_lock);
-        } else {
-            printf("Deposit failed: invalid account or password\n");
         }
 
   	// Withdraw
@@ -164,8 +158,6 @@ void process_transaction(command_line large_token_buffer, account *accounts, int
             acc->balance -= amount;
             acc->transaction_tracter += amount;
             pthread_mutex_unlock(&acc->ac_lock);
-        } else {
-            printf("Withdrawal failed: invalid account or password\n");
         }
         
     }
