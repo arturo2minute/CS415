@@ -6,6 +6,17 @@
 #include "account.h"
 #include "string_parser.h"
 
+void print_accounts(account *accounts, int account_nums) {
+    for (int i = 0; i < account_nums; i++) {
+        printf("Account %d:\n", i);
+        printf("  Account Number: %s", accounts[i].account_number);  // `strncpy` will add '\0', so no extra newline needed
+        printf("  Password: %s\n", accounts[i].password);
+        printf("  Balance: %.2f\n", accounts[i].balance);
+        printf("  Reward Rate: %.3f\n", accounts[i].reward_rate);
+        printf("  Transaction Tracker: %.2f\n\n", accounts[i].transaction_tracter);
+    }
+}
+
 void file_mode(char *filename){
 	//opening file to read
 	FILE *inFPtr;
@@ -67,6 +78,9 @@ void file_mode(char *filename){
         accounts[i].transaction_tracter = 0.0;
         pthread_mutex_init(&accounts[i].ac_lock, NULL);
     }
+
+    // Print accounts to verify they were added correctly
+    print_accounts(accounts, account_nums);
 
 	command_line large_token_buffer;
 	command_line small_token_buffer;
