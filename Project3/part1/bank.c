@@ -18,9 +18,6 @@ void print_accounts(account *accounts, int account_nums) {
 }
 
 void file_mode(char *filename){
-
-	printf("Made it into the function!\n");
-
 	//opening file to read
 	FILE *inFPtr;
 	inFPtr = fopen (filename, "r");
@@ -50,11 +47,8 @@ void file_mode(char *filename){
 	    }
     }
 
-    printf("Made it into the accounts!\n");
-    printf("Account totals: %d\n", account_nums);
     // Loop to populate the accounts array (4 lines per account)
     for (int i = 0; i < account_nums; i++) {
-    	printf("Account %d:\n", i);
         // Skip index line
         getline(&line_buf, &len, inFPtr);
 
@@ -85,9 +79,7 @@ void file_mode(char *filename){
         pthread_mutex_init(&accounts[i].ac_lock, NULL);
     }
 
-    printf("Made it after the accounts!\n");
-
-    // Print accounts to verify they were added correctly
+    // Print accounts for testing
     print_accounts(accounts, account_nums);
 
 	command_line large_token_buffer;
