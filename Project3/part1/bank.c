@@ -18,6 +18,9 @@ void print_accounts(account *accounts, int account_nums) {
 }
 
 void file_mode(char *filename){
+
+	printf("Made it into the function!");
+	
 	//opening file to read
 	FILE *inFPtr;
 	inFPtr = fopen (filename, "r");
