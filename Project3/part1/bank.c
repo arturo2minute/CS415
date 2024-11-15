@@ -19,15 +19,15 @@ void print_accounts(account *accounts, int account_nums) {
 
 void file_mode(char *filename){
 
-	printf("Made it into the function!");
-	
+	printf("Made it into the function!\n");
+
 	//opening file to read
 	FILE *inFPtr;
 	inFPtr = fopen (filename, "r");
 
 	if (inFPtr == NULL){
 		const char *error_msg = "Error: Invalid file\n";
-                write(STDOUT_FILENO, error_msg, strlen(error_msg));
+        write(STDOUT_FILENO, error_msg, strlen(error_msg));
 		exit(0);
 	}
 
@@ -50,6 +50,7 @@ void file_mode(char *filename){
 	    }
     }
 
+    printf("Made it into the accounts!\n");
     // Loop to populate the accounts array (4 lines per account)
     for (int i = 0; i < account_nums; i++) {
         // Skip index line
