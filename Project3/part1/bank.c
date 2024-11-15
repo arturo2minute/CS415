@@ -1,5 +1,7 @@
  #include <stdio.h>
 #include <string.h>
+#include <pthread.h>
+#include <stdlib.h>
 #include "account.h"
 #include "string_parser.h"
 
