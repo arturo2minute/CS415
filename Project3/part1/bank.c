@@ -33,9 +33,6 @@ void print_final_balances(const char *output_filename) {
         fprintf(outFPtr, "%d balance:\t%.2f\n\n", i, accounts[i].balance);
     }
 
-    // Add two extra newlines at the end of the file
-    fprintf(outFPtr, "\n\n");
-
     fclose(outFPtr);
 }
 
