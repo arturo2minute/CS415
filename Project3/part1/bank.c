@@ -17,6 +17,47 @@ void print_accounts(account *accounts, int account_nums) {
     }
 }
 
+
+void process_transaction(command_line large_token_buffer, account *accounts, int account_nums) {
+    // Ensure the first token exists (transaction type)
+    if (large_token_buffer.command_list[0] == NULL) {
+        return;
+    }
+
+    // Determine transaction type by the first token
+    char *transaction_type = large_token_buffer.command_list[0];
+
+    if (strcmp(transaction_type, "T") == 0) {  // Transfer funds
+        char *src_account = large_token_buffer.command_list[1];
+        char *password = large_token_buffer.command_list[2];
+        char *dest_account = large_token_buffer.command_list[3];
+        double transfer_amount = atof(large_token_buffer.command_list[4]);
+
+        
+
+    } else if (strcmp(transaction_type, "C") == 0) {  // Check balance
+        char *account_num = large_token_buffer.command_list[1];
+        char *password = large_token_buffer.command_list[2];
+
+        
+
+    } else if (strcmp(transaction_type, "D") == 0) {  // Deposit
+        char *account_num = large_token_buffer.command_list[1];
+        char *password = large_token_buffer.command_list[2];
+        double amount = atof(large_token_buffer.command_list[3]);
+
+        
+
+    } else if (strcmp(transaction_type, "W") == 0) {  // Withdraw
+        char *account_num = large_token_buffer.command_list[1];
+        char *password = large_token_buffer.command_list[2];
+        double amount = atof(large_token_buffer.command_list[3]);
+
+        
+    }
+}
+
+
 void file_mode(char *filename){
 	//opening file to read
 	FILE *inFPtr;
@@ -83,34 +124,23 @@ void file_mode(char *filename){
     print_accounts(accounts, account_nums);
 
 	command_line large_token_buffer;
-	command_line small_token_buffer;
 
 	int line_num = 0;
 
 	//loop until the file is over
 	while (getline (&line_buf, &len, inFPtr) != -1){
-		//tokenize line buffer, large token is seperated by ";"
-		large_token_buffer = str_filler (line_buf, ";");
+		//tokenize line buffer, large token is seperated by " "
+		large_token_buffer = str_filler (line_buf, " ");
 
-		//iterate through each large token
-		for (int i = 0; large_token_buffer.command_list[i] != NULL; i++){
-			//tokenize large buffer, smaller token is seperated by " "(space bar)
-			small_token_buffer = str_filler (large_token_buffer.command_list[i], " ");
+		// Ensure not empty line
+		if (large_token_buffer.command_list[0] == NULL) {
+	        // If the line is empty, skip it
+	        free_command_line(&large_token_buffer);
+	        continue;
+	    }
 
-			// free if null
-			if (small_token_buffer.command_list[0] == NULL){
-				free_command_line(&small_token_buffer);
-               	continue;
-           	}
-
-           	// TODO:
-
-
-           	//free smaller tokens and reset variable
-			free_command_line(&small_token_buffer);
-			memset (&small_token_buffer, 0, 0);
-
-		}
+	    // Call process_transaction with the tokenized line and account information
+    	process_transaction(large_token_buffer, accounts, account_nums);
 
 		//free large token and reset variable
 		free_command_line (&large_token_buffer);
