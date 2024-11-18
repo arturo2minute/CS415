@@ -90,6 +90,7 @@ void *update_balance(void* arg){
 
 
 void *process_transaction(void* arg) {
+    command_line large_token_buffer;
 
     // cast back to the type we are expecting!
     int *id = (int *)arg;
@@ -109,17 +110,17 @@ void *process_transaction(void* arg) {
     char* line_buf = malloc (len);
 
     // Find starting pointer = id * 12000 + 51
-    int starting = (id * lines_per_threads) + skipped_lines;
+    int starting = (*id * lines_per_threads) + skipped_lines;
     int ending = starting + 12000;
 
     // Loop and get pointer to correct line
     for(int i = 0; i < starting; i++){
-        getline (&line_buf, &len, inFPtr)
+        getline (&line_buf, &len, inFPtr);
     }
 
     // Loop from start pointer to end pointer
     for(int i = starting; i < ending; i++){
-        getline (&line_buf, &len, inFPtr)
+        getline (&line_buf, &len, inFPtr);
 
         large_token_buffer = str_filler (line_buf, " ");
 
@@ -190,11 +191,13 @@ void *process_transaction(void* arg) {
             double amount = atof(large_token_buffer.command_list[3]);
 
             // Find the account
+            int acc_index = 0;
             account *acc = NULL;
             for (int i = 0; i < account_nums; i++) {
                 if (strcmp(accounts[i].account_number, account_num) == 0) {
-                    pthread_mutex_lock(&(accounts[acc_index].ac_lock));
+                    pthread_mutex_lock(&(accounts[i].ac_lock));
                     acc = &accounts[i];
+                    acc_index = i;
                     break;
                 }
             }
@@ -213,11 +216,13 @@ void *process_transaction(void* arg) {
             double amount = atof(large_token_buffer.command_list[3]);
 
             // Find the account
+            int acc_index = 0;
             account *acc = NULL;
             for (int i = 0; i < account_nums; i++) {
                 if (strcmp(accounts[i].account_number, account_num) == 0) {
-                    pthread_mutex_lock(&(accounts[acc_index].ac_lock));
+                    pthread_mutex_lock(&(accounts[i].ac_lock));
                     acc = &accounts[i];
+                    acc_index = i;
                     break;
                 }
             }
@@ -231,6 +236,8 @@ void *process_transaction(void* arg) {
         }
     }
 
+    free_command_line(&large_token_buffer);
+    fclose(inFPtr);
     pthread_exit(NULL);
 }
 
@@ -306,8 +313,6 @@ void file_mode(){
 
     // // Print accounts for testing
     // print_accounts();
-
-	command_line large_token_buffer;
 
 	int line_num = 0;
 
