@@ -315,7 +315,7 @@ void file_mode(){
 
     // Find number of transactions per thread
     lines_per_threads = (total_lines - skipped_lines) / NUM_WORKERS;
-    printf("Number of transactions per thread: %d\n", lines_per_threads);
+    printf("Number of transactions per thread: %d\n", NUM_WORKERS);
 
 	int line_num = 0;
 
