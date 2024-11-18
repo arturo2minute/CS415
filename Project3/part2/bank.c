@@ -308,7 +308,6 @@ void file_mode(){
     fclose(inFPtr);
 
     //opening file to read
-    FILE *inFPtr;
     inFPtr = fopen (filename, "r");
 
     // Find the total lines in the file
