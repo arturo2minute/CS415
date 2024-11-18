@@ -166,8 +166,8 @@ void *process_transaction(void* arg) {
                 src->transaction_tracter += transfer_amount;
             }
 
-            pthread_mutex_lock(&(accounts[src_index].ac_lock));
-            pthread_mutex_lock(&(accounts[dst_index].ac_lock));
+            pthread_mutex_unlock(&(accounts[src_index].ac_lock));
+            pthread_mutex_unlock(&(accounts[dst_index].ac_lock));
 
         // Check balance
         } else if (strcmp(transaction_type, "C") == 0) {
