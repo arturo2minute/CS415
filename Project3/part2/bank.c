@@ -305,6 +305,12 @@ void file_mode(){
     // // Print accounts for testing
     // print_accounts();
 
+    fclose(inFPtr);
+
+    //opening file to read
+    FILE *inFPtr;
+    inFPtr = fopen (filename, "r");
+
     // Find the total lines in the file
     total_lines = count_total_lines(inFPtr);
     printf("Total lines in the file: %d\n", total_lines);
@@ -315,7 +321,7 @@ void file_mode(){
 
     // Find number of transactions per thread
     lines_per_threads = (total_lines - skipped_lines) / NUM_WORKERS;
-    printf("Number of transactions per thread: %d\n", NUM_WORKERS);
+    printf("Number of transactions per thread: %d\n", lines_per_threads);
 
 	int line_num = 0;
 
@@ -340,7 +346,6 @@ void file_mode(){
 
 	// Close and free buffer and accounts
 	free(accounts);
-	fclose(inFPtr);
 	free (line_buf);
 
 }
