@@ -257,29 +257,17 @@ void file_mode(){
 	size_t len = 128;
 	char* line_buf = malloc (len);
 
-    // Find the total lines in the file
-    total_lines = count_total_lines(inFPtr);
-    printf("Total lines in the file: %d\n", total_lines);
-
-    // Find number of skipped lines
-    skipped_lines = (account_nums * 5) + 1;
-    printf("Number of skipped lines (account information): %d\n", skipped_lines);
-
-    // Find number of transactions per thread
-    lines_per_threads = (total_lines - skipped_lines) / NUM_WORKERS;
-    printf("Number of transactions per thread: %d\n", lines_per_threads);
-
-	// Read the first line to get the integer
+    // Read the first line to get the integer
     if (getline(&line_buf, &len, inFPtr) != -1) {
-    	// Convert first line to an integer
+        // Convert first line to an integer
         account_nums = atoi(line_buf);
 
         // Allocate memory for an array of `account` structs
-	    accounts = (account *)malloc(account_nums * sizeof(account));
-	    if (accounts == NULL) {
-	        fprintf(stderr, "Error: Memory allocation failed\n");
-	        exit(EXIT_FAILURE);
-	    }
+        accounts = (account *)malloc(account_nums * sizeof(account));
+        if (accounts == NULL) {
+            fprintf(stderr, "Error: Memory allocation failed\n");
+            exit(EXIT_FAILURE);
+        }
     }
 
     // Loop to populate the accounts array (4 lines per account)
@@ -316,6 +304,18 @@ void file_mode(){
 
     // // Print accounts for testing
     // print_accounts();
+
+    // Find the total lines in the file
+    total_lines = count_total_lines(inFPtr);
+    printf("Total lines in the file: %d\n", total_lines);
+
+    // Find number of skipped lines
+    skipped_lines = (account_nums * 5) + 1;
+    printf("Number of skipped lines (account information): %d\n", skipped_lines);
+
+    // Find number of transactions per thread
+    lines_per_threads = (total_lines - skipped_lines) / NUM_WORKERS;
+    printf("Number of transactions per thread: %d\n", lines_per_threads);
 
 	int line_num = 0;
 
