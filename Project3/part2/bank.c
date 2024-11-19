@@ -325,6 +325,12 @@ void file_mode(){
 	int line_num = 0;
 
     // create thread, give job, and cast args to void pointer!
+    thread_ids = malloc(NUM_WORKERS * sizeof(pthread_t));
+    if (thread_ids == NULL) {
+        perror("Failed to allocate memory for thread IDs");
+        exit(EXIT_FAILURE);
+    }
+    
     for(int i = 0; i < NUM_WORKERS; i++){
         pthread_create(&thread_ids[i], NULL, process_transaction, (void*)&(numbers[i]));
     }
