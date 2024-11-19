@@ -121,6 +121,7 @@ void *update_balance(void* arg){
 
 
 void *process_transaction(void* arg) {
+    int check_balance_count = 0; // Counter for "Check Balance" transactions
     command_line large_token_buffer;
 
     // cast back to the type we are expecting!
