@@ -402,7 +402,6 @@ void file_mode(){
     	free(accounts);
     	free (line_buf);
         free(thread_ids);
-        free(bank_thread);
         close(pipe_fd[1]); // Close write end of the pipe in the Duck Bank process
     }
 }
