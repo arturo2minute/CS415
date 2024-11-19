@@ -312,15 +312,15 @@ void file_mode(){
 
     // Find the total lines in the file
     total_lines = count_total_lines(inFPtr);
-    printf("Total lines in the file: %d\n", total_lines);
+    //printf("Total lines in the file: %d\n", total_lines);
 
     // Find number of skipped lines
     skipped_lines = (account_nums * 5) + 1;
-    printf("Number of skipped lines (account information): %d\n", skipped_lines);
+    //printf("Number of skipped lines (account information): %d\n", skipped_lines);
 
     // Find number of transactions per thread
     lines_per_threads = (total_lines - skipped_lines) / NUM_WORKERS;
-    printf("Number of transactions per thread: %d\n", lines_per_threads);
+    //printf("Number of transactions per thread: %d\n", lines_per_threads);
 
 	int line_num = 0;
 
@@ -330,7 +330,7 @@ void file_mode(){
         perror("Failed to allocate memory for thread IDs");
         exit(EXIT_FAILURE);
     }
-    
+
     for(int i = 0; i < NUM_WORKERS; i++){
         pthread_create(&thread_ids[i], NULL, process_transaction, (void*)&(numbers[i]));
     }
