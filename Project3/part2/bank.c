@@ -91,30 +91,50 @@ void auditor_process() {
 
 void *update_balance(void* arg){
 
-	// Apply rewards to all accounts
-	for (int i = 0; i < account_nums; i++){
+	// // Apply rewards to all accounts
+	// for (int i = 0; i < account_nums; i++){
+    //     pthread_mutex_lock(&(accounts[i].ac_lock));
+
+	// 	// Update balance based on reward rate and transaction tracker
+    //     double reward = accounts[i].transaction_tracter * accounts[i].reward_rate;
+
+    //     // Add reward to balance
+    //     accounts[i].balance += reward;
+
+    //     // Reset the transaction tracker after applying the reward
+    //     accounts[i].transaction_tracter = 0.0;
+    //     pthread_mutex_unlock(&(accounts[i].ac_lock));
+	// }
+
+    // char final_balances[1024] = "Final Balances:\n";
+    // for (int i = 0; i < account_nums; i++) {
+    //     char balance_entry[64];
+    //     snprintf(balance_entry, sizeof(balance_entry), "Account: %s Balance: %.2f\n",
+    //              accounts[i].account_number, accounts[i].balance);
+    //     strcat(final_balances, balance_entry);
+    // }
+
+    // write(pipe_fd[1], final_balances, strlen(final_balances));
+
+    // pthread_exit(NULL);
+
+    char log_entry[128];
+    for (int i = 0; i < account_nums; i++) {
         pthread_mutex_lock(&(accounts[i].ac_lock));
 
-		// Update balance based on reward rate and transaction tracker
         double reward = accounts[i].transaction_tracter * accounts[i].reward_rate;
-
-        // Add reward to balance
         accounts[i].balance += reward;
-
-        // Reset the transaction tracker after applying the reward
         accounts[i].transaction_tracter = 0.0;
+
         pthread_mutex_unlock(&(accounts[i].ac_lock));
-	}
 
-    char final_balances[1024] = "Final Balances:\n";
-    for (int i = 0; i < account_nums; i++) {
-        char balance_entry[64];
-        snprintf(balance_entry, sizeof(balance_entry), "Account: %s Balance: %.2f\n",
-                 accounts[i].account_number, accounts[i].balance);
-        strcat(final_balances, balance_entry);
+        // Log applied interest to the pipe
+        time_t now = time(NULL);
+        snprintf(log_entry, sizeof(log_entry), 
+            "Applied Interest to account %s. New Balance: %.2f. Time of Update: %s", 
+            accounts[i].account_number, accounts[i].balance, ctime(&now));
+        write(pipe_fd[1], log_entry, strlen(log_entry));
     }
-
-    write(pipe_fd[1], final_balances, strlen(final_balances));
 
     pthread_exit(NULL);
 }
@@ -203,16 +223,40 @@ void *process_transaction(void* arg) {
 
         // Check balance
         } else if (strcmp(transaction_type, "C") == 0) {
-            check_balance_count++;
+            // check_balance_count++;
 
+            // if (check_balance_count % 500 == 0) {
+            //     char *account_num = large_token_buffer.command_list[1];
+            //     char *password = large_token_buffer.command_list[2];
+
+            //     account *acc = NULL;
+            //     for (int i = 0; i < account_nums; i++) {
+            //         if (strcmp(accounts[i].account_number, account_num) == 0) {
+            //             acc = &accounts[i];
+            //             break;
+            //         }
+            //     }
+
+            //     if (acc && strcmp(acc->password, password) == 0) {
+            //         time_t now = time(NULL);
+            //         char log_entry[128];
+            //         snprintf(log_entry, sizeof(log_entry),
+            //                  "Check Balance: Account: %s Balance: %.2f Time: %s\n",
+            //                  acc->account_number, acc->balance, ctime(&now));
+
+            //         write(pipe_fd[1], log_entry, strlen(log_entry));
+            //     }
+            // }
+
+            check_balance_count++;
             if (check_balance_count % 500 == 0) {
                 char *account_num = large_token_buffer.command_list[1];
                 char *password = large_token_buffer.command_list[2];
 
                 account *acc = NULL;
-                for (int i = 0; i < account_nums; i++) {
-                    if (strcmp(accounts[i].account_number, account_num) == 0) {
-                        acc = &accounts[i];
+                for (int j = 0; j < account_nums; j++) {
+                    if (strcmp(accounts[j].account_number, account_num) == 0) {
+                        acc = &accounts[j];
                         break;
                     }
                 }
@@ -220,10 +264,9 @@ void *process_transaction(void* arg) {
                 if (acc && strcmp(acc->password, password) == 0) {
                     time_t now = time(NULL);
                     char log_entry[128];
-                    snprintf(log_entry, sizeof(log_entry),
-                             "Check Balance: Account: %s Balance: %.2f Time: %s\n",
-                             acc->account_number, acc->balance, ctime(&now));
-
+                    snprintf(log_entry, sizeof(log_entry), 
+                        "Worker checked balance of Account %s. Balance: %.2f. Check occurred at %s", 
+                        acc->account_number, acc->balance, ctime(&now));
                     write(pipe_fd[1], log_entry, strlen(log_entry));
                 }
             }
