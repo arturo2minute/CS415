@@ -80,9 +80,11 @@ void auditor_process() {
     }
 
     char buffer[256];
-    while (read(pipe_fd[0], buffer, sizeof(buffer)) > 0) {
+    ssize_t bytes_read;
+    while ((bytes_read = read(pipe_fd[0], buffer, sizeof(buffer) - 1)) > 0) {
+        buffer[bytes_read] = '\0'; // Null-terminate the buffer
         fprintf(ledger, "%s", buffer);
-        memset(buffer, 0, sizeof(buffer));
+        memset(buffer, 0, sizeof(buffer)); // Optional, but not strictly needed now
     }
 
     fclose(ledger);
