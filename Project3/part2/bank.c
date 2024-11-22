@@ -268,9 +268,10 @@ void *process_transaction(void* arg) {
             }
             pthread_mutex_unlock(&(accounts[acc_index].ac_lock));
         }
+        free_command_line(&large_token_buffer);
     }
 
-    free_command_line(&large_token_buffer);
+    //free_command_line(&large_token_buffer);
     free(line_buf);
     fclose(inFPtr);
     pthread_exit(NULL);
@@ -394,6 +395,8 @@ void file_mode(){
 
         // Wait for bank_thread
         pthread_join(bank_thread, NULL);
+
+        wait(NULL);
 
         // Print final balances to an output file
         print_final_balances("output.txt");
