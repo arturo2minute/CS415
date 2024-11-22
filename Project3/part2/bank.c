@@ -397,7 +397,7 @@ void file_mode(){
         // Wait for bank_thread
         pthread_join(bank_thread, NULL);
 
-        wait(NULL);
+        //wait(NULL);
 
         // Print final balances to an output file
         print_final_balances("output.txt");
