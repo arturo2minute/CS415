@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "account.h"
+#include <sys/wait.h>
 #include "string_parser.h"
 
 #define NUM_WORKERS 10
