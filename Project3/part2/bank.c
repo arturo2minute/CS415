@@ -399,6 +399,7 @@ void file_mode(){
         print_final_balances("output.txt");
 
     	// Close and free buffer and accounts
+        fclose(inFPtr);
     	free(accounts);
     	free (line_buf);
         free(thread_ids);
