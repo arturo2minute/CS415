@@ -335,7 +335,7 @@ void *process_transaction(void* arg) {
             pthread_cond_signal(&cond);
 
             // Wait until the bank thread updates balances
-            pthread_cond_wait(&cond, &mutex);
+            pthread_cond_wait(&cond, &process_transaction_lock);
         }
         pthread_mutex_unlock(&process_transaction_lock);
 
