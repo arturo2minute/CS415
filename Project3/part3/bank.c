@@ -108,7 +108,7 @@ void *update_balance(void* arg){
         pthread_mutex_lock(&process_transaction_lock);
         
         // Wait until the signal to update balances
-        while (process_transaction < 5000) {
+        while (processed_transactions < 5000) {
             pthread_cond_wait(&cond, &process_transaction_lock);
         }
 
