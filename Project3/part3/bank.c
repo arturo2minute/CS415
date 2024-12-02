@@ -114,8 +114,10 @@ void *update_balance(void* arg){
         }
 
         // Reset the flag for the next cycle
-        // update_ready = 0;
+        update_ready = 1;
         processed_transactions = 0;
+
+        pthread_mutex_unlock(&process_transaction_lock);
 
         // Update account balances
         for (int i = 0; i < account_nums; i++) {
@@ -143,9 +145,11 @@ void *update_balance(void* arg){
                 fclose(outFPtr);
             }
         }
-        // Signal all worker threads to resume
-        pthread_cond_broadcast(&cond);
 
+        // Signal all worker threads to resume
+        pthread_mutex_lock(&process_transaction_lock);
+        update_ready = 0; // Reset the update_ready flag
+        pthread_cond_broadcast(&cond); // Notify all workers
         pthread_mutex_unlock(&process_transaction_lock);
     }
     pthread_exit(NULL);
