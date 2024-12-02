@@ -311,9 +311,8 @@ void *process_transaction(void* arg) {
         free_command_line(&large_token_buffer);
 
         // Check if the threshold is reached
-        printf("test\n");
         pthread_mutex_lock(&mutex);
-        printf("test 1\n");
+        printf("processed_transactions: %d\n", processed_transactions);
         if (processed_transactions >= 5000) {
             update_ready = 1; // Notify the bank thread
             processed_transactions = 0;
