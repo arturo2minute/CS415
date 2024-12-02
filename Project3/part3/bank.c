@@ -7,6 +7,13 @@
 #include <sys/wait.h>
 #include "string_parser.h"
 
+pthread_barrier_t barrier;          // Barrier for thread synchronization
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; // Mutex for shared data
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;   // Condition variable for communication
+
+int processed_transactions = 0;    // Shared counter for processed transactions
+int update_ready = 0;              // Flag to indicate bank thread can update balances
+
 #define NUM_WORKERS 10
 pthread_t *thread_ids;
 pthread_t bank_thread;
@@ -101,22 +108,51 @@ void auditor_process() {
 
 void *update_balance(void* arg){
     char log_entry[128];
-    for (int i = 0; i < account_nums; i++) {
-        pthread_mutex_lock(&(accounts[i].ac_lock));
 
-        double reward = accounts[i].transaction_tracter * accounts[i].reward_rate;
-        accounts[i].balance += reward;
-        accounts[i].transaction_tracter = 0.0;
+    while (1) {
+        pthread_mutex_lock(&mutex);
+        
+        // Wait until the signal to update balances
+        while (!update_ready) {
+            pthread_cond_wait(&cond, &mutex);
+        }
 
-        pthread_mutex_unlock(&(accounts[i].ac_lock));
+        // Reset the flag for the next cycle
+        update_ready = 0;
 
-        // Log applied interest to the pipe
-        time_t now = time(NULL);
-        snprintf(log_entry, sizeof(log_entry), 
-            "Applied Interest to account %s. New Balance: %.2f. Time of Update: %s", 
-            accounts[i].account_number, accounts[i].balance, ctime(&now));
-        write(pipe_fd[1], log_entry, strlen(log_entry));
+        pthread_mutex_unlock(&mutex);
+
+        // Update account balances
+        for (int i = 0; i < account_nums; i++) {
+            pthread_mutex_lock(&(accounts[i].ac_lock));
+
+            double reward = accounts[i].transaction_tracter * accounts[i].reward_rate;
+            accounts[i].balance += reward;
+            accounts[i].transaction_tracter = 0.0;
+
+            pthread_mutex_unlock(&(accounts[i].ac_lock));
+
+            // Log applied interest to the pipe
+            time_t now = time(NULL);
+            snprintf(log_entry, sizeof(log_entry),
+                     "Applied Interest to account %s. New Balance: %.2f. Time of Update: %s",
+                     accounts[i].account_number, accounts[i].balance, ctime(&now));
+            write(pipe_fd[1], log_entry, strlen(log_entry));
+
+            // Write balance to act_#.txt
+            char filename[64];
+            snprintf(filename, sizeof(filename), "act_%d.txt", i);
+            FILE *outFPtr = fopen(filename, "a");
+            if (outFPtr != NULL) {
+                fprintf(outFPtr, "%.2f\n", accounts[i].balance);
+                fclose(outFPtr);
+            }
+        }
+
+        // Signal all worker threads to resume
+        pthread_cond_broadcast(&cond);
     }
+
 
     pthread_exit(NULL);
 }
@@ -279,6 +315,19 @@ void *process_transaction(void* arg) {
             pthread_mutex_unlock(&(accounts[acc_index].ac_lock));
         }
         free_command_line(&large_token_buffer);
+
+        // Check if the threshold is reached
+        pthread_mutex_lock(&mutex);
+        if (processed_transactions >= 5000) {
+            update_ready = 1; // Notify the bank thread
+            processed_transactions = 0;
+            pthread_cond_signal(&cond);
+
+            // Wait until the bank thread updates balances
+            pthread_cond_wait(&cond, &mutex);
+        }
+        pthread_mutex_unlock(&mutex);
+
     }
 
     //free_command_line(&large_token_buffer);
@@ -289,6 +338,9 @@ void *process_transaction(void* arg) {
 
 
 void file_mode(){
+
+    // Initialize barrier
+    pthread_barrier_init(&barrier, NULL, NUM_WORKERS + 1);
 
     if (pipe(pipe_fd) == -1) {
         perror("Pipe creation failed");
@@ -310,6 +362,7 @@ void file_mode(){
         
     } else {
         close(pipe_fd[0]); // Close read end of the pipe in the Duck Bank process
+
     	//opening file to read
     	FILE *inFPtr;
     	inFPtr = fopen (filename, "r");
@@ -395,6 +448,7 @@ void file_mode(){
             exit(EXIT_FAILURE);
         }
 
+        // Create worker threads
         for(int i = 0; i < NUM_WORKERS; i++){
             pthread_create(&thread_ids[i], NULL, process_transaction, (void*)&(numbers[i]));
         }
@@ -421,6 +475,8 @@ void file_mode(){
     	free (line_buf);
         free(thread_ids);
         close(pipe_fd[1]); // Close write end of the pipe in the Duck Bank process
+
+        pthread_barrier_destroy(&barrier);
     }
 }
 
