@@ -328,7 +328,7 @@ void *process_transaction(void* arg) {
 
         // Check if the threshold is reached
         pthread_mutex_lock(&process_transaction_lock);
-        printf("processed_transactions: %d\n", processed_transactions);
+        //printf("processed_transactions: %d\n", processed_transactions);
         if (processed_transactions >= 5000) {
             update_ready = 1; // Notify the bank thread
             processed_transactions = 0;
