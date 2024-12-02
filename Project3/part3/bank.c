@@ -111,7 +111,9 @@ void *update_balance(void* arg){
         
         // Wait until the signal to update balances
         while (processed_transactions < 5000) {
+            printf("Thread %d waiting on condition\n", *id);
             pthread_cond_wait(&cond, &process_transaction_lock);
+            printf("Thread %d resumed after condition\n", *id);
         }
 
         // Reset the flag for the next cycle
