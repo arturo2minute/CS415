@@ -11,6 +11,7 @@ pthread_barrier_t barrier;          // Barrier for thread synchronization
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; // Mutex for shared data
 pthread_mutex_t process_transaction_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t update_transaction = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t pipe_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;   // Condition variable for communication
 
 int processed_transactions = 0;    // Shared counter for processed transactions
@@ -109,7 +110,7 @@ void *update_balance(void* arg){
         pthread_mutex_lock(&process_transaction_lock);
         
         // Wait until the signal to update balances
-        while (processed_transactions < 5000) {
+        while (!update_ready) {
             pthread_cond_wait(&cond, &process_transaction_lock);
         }
 
