@@ -32,12 +32,6 @@ int numbers[NUM_WORKERS] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
 int pipe_fd[2]; // Pipe for communication between Duck Bank and Auditor
 
-pthread_barrier_t barrier;          // Barrier for thread synchronization
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; // Mutex for shared data
-pthread_cond_t cond = PTHREAD_COND_INITIALIZER;   // Condition variable for communication
-
-int processed_transactions = 0;    // Shared counter for processed transactions
-int update_ready = 0;              // Flag to indicate bank thread can update balances
 
 void print_accounts() {
     for (int i = 0; i < account_nums; i++) {
