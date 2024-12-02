@@ -108,12 +108,13 @@ void *update_balance(void* arg){
         pthread_mutex_lock(&process_transaction_lock);
         
         // Wait until the signal to update balances
-        while (!update_ready) {
+        while (process_transaction < 5000) {
             pthread_cond_wait(&cond, &process_transaction_lock);
         }
 
         // Reset the flag for the next cycle
-        update_ready = 0;
+        // update_ready = 0;
+        processed_transactions = 0;
 
         // Update account balances
         for (int i = 0; i < account_nums; i++) {
@@ -325,11 +326,12 @@ void *process_transaction(void* arg) {
 
         // Check if the threshold is reached
         pthread_mutex_lock(&process_transaction_lock);
-        printf("processed_transactions: %d\n", processed_transactions);
-        
-        if (processed_transactions >= 5000) {
+        //printf("processed_transactions: %d\n", processed_transactions);
+
+        while (processed_transactions >= 5000) {
+            printf("processed_transactions: %d\n", processed_transactions);
             update_ready = 1; // Notify the bank thread
-            processed_transactions = 0;
+            
             pthread_cond_signal(&cond);
 
             // Wait until the bank thread updates balances
