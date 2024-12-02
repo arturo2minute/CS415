@@ -105,17 +105,15 @@ void *update_balance(void* arg){
     char log_entry[128];
 
     while (1) {
-        pthread_mutex_lock(&mutex);
+        pthread_mutex_lock(&process_transaction_lock);
         
         // Wait until the signal to update balances
         while (!update_ready) {
-            pthread_cond_wait(&cond, &mutex);
+            pthread_cond_wait(&cond, &process_transaction_lock);
         }
 
         // Reset the flag for the next cycle
         update_ready = 0;
-
-        pthread_mutex_unlock(&mutex);
 
         // Update account balances
         for (int i = 0; i < account_nums; i++) {
@@ -146,6 +144,8 @@ void *update_balance(void* arg){
 
         // Signal all worker threads to resume
         pthread_cond_broadcast(&cond);
+
+        pthread_mutex_unlock(&process_transaction_lock);
     }
 
 
@@ -316,7 +316,7 @@ void *process_transaction(void* arg) {
             if (acc && strcmp(acc->password, password) == 0) {
                 acc->balance -= amount;
                 acc->transaction_tracter += amount;
-                
+
                 // Update transactions
                 pthread_mutex_lock(&process_transaction_lock);
                 processed_transactions++;
