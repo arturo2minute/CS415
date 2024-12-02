@@ -9,6 +9,7 @@
 
 pthread_barrier_t barrier;          // Barrier for thread synchronization
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; // Mutex for shared data
+pthread_mutex_t process_transaction_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;   // Condition variable for communication
 
 int processed_transactions = 0;    // Shared counter for processed transactions
@@ -228,6 +229,11 @@ void *process_transaction(void* arg) {
                 src->balance -= transfer_amount;
                 dest->balance += transfer_amount;
                 src->transaction_tracter += transfer_amount;
+
+                // Update transactions
+                pthread_mutex_lock(&process_transaction_lock);
+                processed_transactions++;
+                pthread_mutex_unlock(&process_transaction_lock);
             }
 
             pthread_mutex_unlock(&(accounts[src_index].ac_lock));
@@ -280,6 +286,11 @@ void *process_transaction(void* arg) {
             if (acc && strcmp(acc->password, password) == 0) {
                 acc->balance += amount;
                 acc->transaction_tracter += amount;
+
+                // Update transactions
+                pthread_mutex_lock(&process_transaction_lock);
+                processed_transactions++;
+                pthread_mutex_unlock(&process_transaction_lock);
             }
             pthread_mutex_unlock(&(accounts[acc_index].ac_lock));
 
@@ -305,13 +316,18 @@ void *process_transaction(void* arg) {
             if (acc && strcmp(acc->password, password) == 0) {
                 acc->balance -= amount;
                 acc->transaction_tracter += amount;
+                
+                // Update transactions
+                pthread_mutex_lock(&process_transaction_lock);
+                processed_transactions++;
+                pthread_mutex_unlock(&process_transaction_lock);
             }
             pthread_mutex_unlock(&(accounts[acc_index].ac_lock));
         }
         free_command_line(&large_token_buffer);
 
         // Check if the threshold is reached
-        pthread_mutex_lock(&mutex);
+        pthread_mutex_lock(&process_transaction_lock);
         printf("processed_transactions: %d\n", processed_transactions);
         if (processed_transactions >= 5000) {
             update_ready = 1; // Notify the bank thread
@@ -321,7 +337,7 @@ void *process_transaction(void* arg) {
             // Wait until the bank thread updates balances
             pthread_cond_wait(&cond, &mutex);
         }
-        pthread_mutex_unlock(&mutex);
+        pthread_mutex_unlock(&process_transaction_lock);
 
     }
 
