@@ -110,7 +110,7 @@ void *update_balance(void* arg){
     while (!update_ready) {
         printf("BANK: waiting cond wait\n");
         pthread_cond_wait(&cond, &process_transaction_lock);
-        printf("BANK: after cond wait\n")
+        printf("BANK: after cond wait\n");
     }
     printf("BANK: updating\n");
     // Update balances and reset counters
