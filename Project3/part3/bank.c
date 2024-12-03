@@ -13,6 +13,9 @@ pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 int processed_transactions = 0; // Shared counter
 int total_transactions = 0;
 
+pthread_mutex_t thread_counters = PTHREAD_MUTEX_INITIALIZER;
+int exited_threads = 0;
+
 int update_ready = 0; // Flag to indicate when the bank thread can update balances
 
 #define NUM_WORKERS 10
@@ -353,9 +356,26 @@ void *process_transaction(void* arg) {
 
     }
 
+    // Check if last thread to exit
+    pthread_mutex_lock(&process_transaction_lock);
+    pthread_mutex_lock(&thread_counters);
+    if (exited_threads == NUM_WORKERS - 1){
+        update_ready = 1; // Notify the bank thread
+        pthread_cond_signal(&cond);
+        pthread_cond_wait(&cond, &process_transaction_lock); // Worker thread pauses
+    }
+    pthread_mutex_unlock(&thread_counters);
+    pthread_mutex_unlock(&process_transaction_lock);
+
     //free_command_line(&large_token_buffer);
     free(line_buf);
     fclose(inFPtr);
+
+    //Update exited threads
+    pthread_mutex_lock(&thread_counters);
+    exited_threads++;
+    pthread_mutex_unlock(&thread_counters);
+
     pthread_exit(NULL);
 }
 
