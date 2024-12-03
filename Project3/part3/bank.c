@@ -18,7 +18,6 @@ pthread_t bank_thread;
 
 // Initialize the barrier
 pthread_barrier_t barrier;
-pthread_barrier_init(&barrier, NULL, NUM_WORKERS + 1);
 
 account *accounts = NULL;
 int account_nums = 0;
@@ -339,7 +338,8 @@ void *process_transaction(void* arg) {
 
 
 void file_mode(){
-
+    pthread_barrier_init(&barrier, NULL, NUM_WORKERS + 1);
+    
     if (pipe(pipe_fd) == -1) {
         perror("Pipe creation failed");
         exit(EXIT_FAILURE);
