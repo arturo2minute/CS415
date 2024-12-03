@@ -7,10 +7,18 @@
 #include <sys/wait.h>
 #include "string_parser.h"
 
+pthread_mutex_t process_transaction_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+int processed_transactions = 0; // Shared counter
+int update_ready = 0; // Flag to indicate when the bank thread can update balances
+
 #define NUM_WORKERS 10
 pthread_t *thread_ids;
 pthread_t bank_thread;
 
+// Initialize the barrier
+pthread_barrier_t barrier;
+pthread_barrier_init(&barrier, NULL, NUM_WORKERS + 1);
 
 account *accounts = NULL;
 int account_nums = 0;
@@ -93,13 +101,36 @@ void auditor_process() {
 }
 
 void *update_balance(void* arg){
+    pthread_barrier_wait(&barrier);
+
     char log_entry[128];
+
+    pthread_mutex_lock(&process_transaction_lock);
+
+    // Wait until signal to update
+    while (!update_ready) {
+        pthread_cond_wait(&cond, &process_transaction_lock);
+    }
+
+    // Update balances and reset counters
+    update_ready = 0;
+    processed_transactions = 0;
+
     for (int i = 0; i < account_nums; i++) {
         pthread_mutex_lock(&(accounts[i].ac_lock));
 
         double reward = accounts[i].transaction_tracter * accounts[i].reward_rate;
         accounts[i].balance += reward;
         accounts[i].transaction_tracter = 0.0;
+
+        // Append to act_#.txt
+        char filename[64];
+        snprintf(filename, sizeof(filename), "act_%d.txt", i);
+        FILE *outFPtr = fopen(filename, "a");
+        if (outFPtr) {
+            fprintf(outFPtr, "%.2f\n", accounts[i].balance);
+            fclose(outFPtr);
+        }
 
         pthread_mutex_unlock(&(accounts[i].ac_lock));
 
@@ -111,11 +142,18 @@ void *update_balance(void* arg){
         write(pipe_fd[1], log_entry, strlen(log_entry));
     }
 
+    // Signal all worker threads to resume
+    pthread_cond_broadcast(&cond);
+
+    pthread_mutex_unlock(&process_transaction_lock);
+
     pthread_exit(NULL);
 }
 
 
 void *process_transaction(void* arg) {
+    pthread_barrier_wait(&barrier);
+
     int check_balance_count = 0; // Counter for "Check Balance" transactions
     command_line large_token_buffer;
 
@@ -191,6 +229,9 @@ void *process_transaction(void* arg) {
                 src->balance -= transfer_amount;
                 dest->balance += transfer_amount;
                 src->transaction_tracter += transfer_amount;
+                pthread_mutex_lock(&process_transaction_lock);
+                processed_transactions++;
+                pthread_mutex_unlock(&process_transaction_lock);
             }
 
             pthread_mutex_unlock(&(accounts[src_index].ac_lock));
@@ -243,6 +284,9 @@ void *process_transaction(void* arg) {
             if (acc && strcmp(acc->password, password) == 0) {
                 acc->balance += amount;
                 acc->transaction_tracter += amount;
+                pthread_mutex_lock(&process_transaction_lock);
+                processed_transactions++;
+                pthread_mutex_unlock(&process_transaction_lock);
             }
             pthread_mutex_unlock(&(accounts[acc_index].ac_lock));
 
@@ -268,10 +312,23 @@ void *process_transaction(void* arg) {
             if (acc && strcmp(acc->password, password) == 0) {
                 acc->balance -= amount;
                 acc->transaction_tracter += amount;
+                pthread_mutex_lock(&process_transaction_lock);
+                processed_transactions++;
+                pthread_mutex_unlock(&process_transaction_lock);
             }
             pthread_mutex_unlock(&(accounts[acc_index].ac_lock));
         }
         free_command_line(&large_token_buffer);
+
+        // Check if we need to pause processing
+        pthread_mutex_lock(&process_transaction_lock);
+        while (processed_transactions >= 5000) {
+            update_ready = 1; // Notify the bank thread
+            pthread_cond_signal(&cond);
+            pthread_cond_wait(&cond, &process_transaction_lock); // Worker thread pauses
+        }
+        pthread_mutex_unlock(&process_transaction_lock);
+
     }
 
     //free_command_line(&large_token_buffer);
