@@ -8,6 +8,7 @@
 #include "string_parser.h"
 
 pthread_mutex_t process_transaction_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t update_counters = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 int processed_transactions = 0; // Shared counter
 int total_transactions = 0;
@@ -246,10 +247,10 @@ void *process_transaction(void* arg) {
                 src->balance -= transfer_amount;
                 dest->balance += transfer_amount;
                 src->transaction_tracter += transfer_amount;
-                pthread_mutex_lock(&process_transaction_lock);
+                pthread_mutex_lock(&update_counters);
                 processed_transactions++;
                 total_transactions++;
-                pthread_mutex_unlock(&process_transaction_lock);
+                pthread_mutex_unlock(&update_counters);
             }
 
             pthread_mutex_unlock(&(accounts[src_index].ac_lock));
@@ -302,10 +303,10 @@ void *process_transaction(void* arg) {
             if (acc && strcmp(acc->password, password) == 0) {
                 acc->balance += amount;
                 acc->transaction_tracter += amount;
-                pthread_mutex_lock(&process_transaction_lock);
+                pthread_mutex_lock(&update_counters);
                 processed_transactions++;
                 total_transactions++;
-                pthread_mutex_unlock(&process_transaction_lock);
+                pthread_mutex_unlock(&update_counters);
             }
             pthread_mutex_unlock(&(accounts[acc_index].ac_lock));
 
@@ -331,10 +332,10 @@ void *process_transaction(void* arg) {
             if (acc && strcmp(acc->password, password) == 0) {
                 acc->balance -= amount;
                 acc->transaction_tracter += amount;
-                pthread_mutex_lock(&process_transaction_lock);
+                pthread_mutex_lock(&update_counters);
                 processed_transactions++;
                 total_transactions++;
-                pthread_mutex_unlock(&process_transaction_lock);
+                pthread_mutex_unlock(&update_counters);
             }
             pthread_mutex_unlock(&(accounts[acc_index].ac_lock));
         }
