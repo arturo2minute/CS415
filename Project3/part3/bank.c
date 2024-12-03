@@ -156,6 +156,7 @@ void *update_balance(void* arg){
 
         // Check if last update
         if (total_transactions == TOTAL_VALID_TRANSACTIONS){
+            printf("BREAK\n");
             break;
         }
 
