@@ -155,8 +155,10 @@ void *update_balance(void* arg){
         pthread_mutex_unlock(&process_transaction_lock);
 
         // Check if last update
-        if (total_transactions == TOTAL_VALID_TRANSACTIONS):
+        if (total_transactions == TOTAL_VALID_TRANSACTIONS){
             break;
+        }
+
     }
 
     pthread_exit(NULL);
