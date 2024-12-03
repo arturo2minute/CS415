@@ -153,7 +153,9 @@ void *update_balance(void* arg){
 
 
 void *process_transaction(void* arg) {
+    printf("worker waiting at barrier\n");
     pthread_barrier_wait(&barrier);
+    printf("worker past barrier\n");
 
     int check_balance_count = 0; // Counter for "Check Balance" transactions
     command_line large_token_buffer;
