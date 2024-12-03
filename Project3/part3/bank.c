@@ -453,13 +453,13 @@ void file_mode(){
             pthread_create(&thread_ids[i], NULL, process_transaction, (void*)&(numbers[i]));
         }
 
+        // Call Update Balance
+        pthread_create(&bank_thread, NULL, update_balance, NULL);
+
         // wait on our threads to rejoin main thread
         for (int j = 0; j < NUM_WORKERS; ++j){
             pthread_join(thread_ids[j], NULL);
         }
-
-        // Call Update Balance
-        pthread_create(&bank_thread, NULL, update_balance, NULL);
 
         // Wait for bank_thread
         pthread_join(bank_thread, NULL);
