@@ -108,7 +108,7 @@ void auditor_process() {
 
 void *update_balance(void* arg){
     pthread_barrier_wait(&barrier);
-    printf("BANK: Got past barrier\n");
+    //printf("BANK: Got past barrier\n");
     char log_entry[128];
 
     while(1){
@@ -117,12 +117,12 @@ void *update_balance(void* arg){
 
         // Wait until signal to update
         while (!update_ready) {
-            printf("BANK: %d\n", total_transactions);
-            printf("BANK: waiting cond wait\n");
+            //printf("BANK: %d\n", total_transactions);
+            //printf("BANK: waiting cond wait\n");
             pthread_cond_wait(&cond, &process_transaction_lock);
-            printf("BANK: after cond wait\n");
+            //printf("BANK: after cond wait\n");
         }
-        printf("BANK: updating\n");
+        //printf("BANK: updating\n");
 
         // Update balances and reset counters
         update_ready = 0;
@@ -161,7 +161,7 @@ void *update_balance(void* arg){
 
         // Check if last update
         if (total_transactions == TOTAL_VALID_TRANSACTIONS){
-            printf("BREAK\n");
+            //printf("BREAK\n");
             break;
         }
 
@@ -172,9 +172,9 @@ void *update_balance(void* arg){
 
 
 void *process_transaction(void* arg) {
-    printf("worker waiting at barrier\n");
+    //printf("worker waiting at barrier\n");
     pthread_barrier_wait(&barrier);
-    printf("worker past barrier\n");
+    //printf("worker past barrier\n");
 
     int check_balance_count = 0; // Counter for "Check Balance" transactions
     command_line large_token_buffer;
