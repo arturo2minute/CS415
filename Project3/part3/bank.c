@@ -10,9 +10,12 @@
 pthread_mutex_t process_transaction_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 int processed_transactions = 0; // Shared counter
+int total_transactions = 0;
+
 int update_ready = 0; // Flag to indicate when the bank thread can update balances
 
 #define NUM_WORKERS 10
+#define TOTAL_VALID_TRANSACTIONS 90000
 pthread_t *thread_ids;
 pthread_t bank_thread;
 
@@ -104,49 +107,57 @@ void *update_balance(void* arg){
     printf("BANK: Got past barrier\n");
     char log_entry[128];
 
-    pthread_mutex_lock(&process_transaction_lock);
-    printf("BANK: Locked transaction\n");
-    // Wait until signal to update
-    while (!update_ready) {
-        printf("BANK: waiting cond wait\n");
-        pthread_cond_wait(&cond, &process_transaction_lock);
-        printf("BANK: after cond wait\n");
-    }
-    printf("BANK: updating\n");
-    // Update balances and reset counters
-    update_ready = 0;
-    processed_transactions = 0;
+    while(1){
+        pthread_mutex_lock(&process_transaction_lock);
+        printf("BANK: Locked transaction\n");
 
-    for (int i = 0; i < account_nums; i++) {
-        pthread_mutex_lock(&(accounts[i].ac_lock));
+        // Wait until signal to update
+        while (!update_ready) {
+            printf("BANK: waiting cond wait\n");
+            pthread_cond_wait(&cond, &process_transaction_lock);
+            printf("BANK: after cond wait\n");
+        }
+        printf("BANK: updating\n");
 
-        double reward = accounts[i].transaction_tracter * accounts[i].reward_rate;
-        accounts[i].balance += reward;
-        accounts[i].transaction_tracter = 0.0;
+        // Update balances and reset counters
+        update_ready = 0;
+        processed_transactions = 0;
 
-        // Append to act_#.txt
-        char filename[64];
-        snprintf(filename, sizeof(filename), "act_%d.txt", i);
-        FILE *outFPtr = fopen(filename, "a");
-        if (outFPtr) {
-            fprintf(outFPtr, "%.2f\n", accounts[i].balance);
-            fclose(outFPtr);
+        for (int i = 0; i < account_nums; i++) {
+            pthread_mutex_lock(&(accounts[i].ac_lock));
+
+            double reward = accounts[i].transaction_tracter * accounts[i].reward_rate;
+            accounts[i].balance += reward;
+            accounts[i].transaction_tracter = 0.0;
+
+            // Append to act_#.txt
+            char filename[64];
+            snprintf(filename, sizeof(filename), "act_%d.txt", i);
+            FILE *outFPtr = fopen(filename, "a");
+            if (outFPtr) {
+                fprintf(outFPtr, "%.2f\n", accounts[i].balance);
+                fclose(outFPtr);
+            }
+
+            pthread_mutex_unlock(&(accounts[i].ac_lock));
+
+            // Log applied interest to the pipe
+            time_t now = time(NULL);
+            snprintf(log_entry, sizeof(log_entry), 
+                "Applied Interest to account %s. New Balance: %.2f. Time of Update: %s", 
+                accounts[i].account_number, accounts[i].balance, ctime(&now));
+            write(pipe_fd[1], log_entry, strlen(log_entry));
         }
 
-        pthread_mutex_unlock(&(accounts[i].ac_lock));
+        // Signal all worker threads to resume
+        pthread_cond_broadcast(&cond);
 
-        // Log applied interest to the pipe
-        time_t now = time(NULL);
-        snprintf(log_entry, sizeof(log_entry), 
-            "Applied Interest to account %s. New Balance: %.2f. Time of Update: %s", 
-            accounts[i].account_number, accounts[i].balance, ctime(&now));
-        write(pipe_fd[1], log_entry, strlen(log_entry));
+        pthread_mutex_unlock(&process_transaction_lock);
+
+        // Check if last update
+        if total_transactions == TOTAL_VALID_TRANSACTIONS:
+            break;
     }
-
-    // Signal all worker threads to resume
-    pthread_cond_broadcast(&cond);
-
-    pthread_mutex_unlock(&process_transaction_lock);
 
     pthread_exit(NULL);
 }
@@ -234,6 +245,7 @@ void *process_transaction(void* arg) {
                 src->transaction_tracter += transfer_amount;
                 pthread_mutex_lock(&process_transaction_lock);
                 processed_transactions++;
+                total_transactions++;
                 pthread_mutex_unlock(&process_transaction_lock);
             }
 
@@ -289,6 +301,7 @@ void *process_transaction(void* arg) {
                 acc->transaction_tracter += amount;
                 pthread_mutex_lock(&process_transaction_lock);
                 processed_transactions++;
+                total_transactions++;
                 pthread_mutex_unlock(&process_transaction_lock);
             }
             pthread_mutex_unlock(&(accounts[acc_index].ac_lock));
@@ -317,6 +330,7 @@ void *process_transaction(void* arg) {
                 acc->transaction_tracter += amount;
                 pthread_mutex_lock(&process_transaction_lock);
                 processed_transactions++;
+                total_transactions++;
                 pthread_mutex_unlock(&process_transaction_lock);
             }
             pthread_mutex_unlock(&(accounts[acc_index].ac_lock));
