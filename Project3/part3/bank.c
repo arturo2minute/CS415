@@ -101,18 +101,18 @@ void auditor_process() {
 
 void *update_balance(void* arg){
     pthread_barrier_wait(&barrier);
-    printf("BANK: Got past barrier\n")
+    printf("BANK: Got past barrier\n");
     char log_entry[128];
 
     pthread_mutex_lock(&process_transaction_lock);
-    printf("BANK: Locked transaction\n")
+    printf("BANK: Locked transaction\n");
     // Wait until signal to update
     while (!update_ready) {
-        printf("BANK: waiting cond wait\n")
+        printf("BANK: waiting cond wait\n");
         pthread_cond_wait(&cond, &process_transaction_lock);
         printf("BANK: after cond wait\n")
     }
-    printf("BANK: updating\n")
+    printf("BANK: updating\n");
     // Update balances and reset counters
     update_ready = 0;
     processed_transactions = 0;
