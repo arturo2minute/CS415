@@ -12,7 +12,7 @@ pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 int processed_transactions = 0; // Shared counter
 int update_ready = 0; // Flag to indicate when the bank thread can update balances
 
-#define NUM_WORKERS 10
+#define NUM_WORKERS 10;
 pthread_t *thread_ids;
 pthread_t bank_thread;
 
