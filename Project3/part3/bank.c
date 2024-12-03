@@ -113,7 +113,7 @@ void *update_balance(void* arg){
 
     while(1){
         pthread_mutex_lock(&process_transaction_lock);
-        printf("BANK: Locked transaction\n");
+        //printf("BANK: Locked transaction\n");
 
         // Wait until signal to update
         while (!update_ready) {
