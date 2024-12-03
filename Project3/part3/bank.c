@@ -12,7 +12,7 @@ pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 int processed_transactions = 0; // Shared counter
 int update_ready = 0; // Flag to indicate when the bank thread can update balances
 
-#define NUM_WORKERS 10;
+#define NUM_WORKERS 10
 pthread_t *thread_ids;
 pthread_t bank_thread;
 
@@ -339,7 +339,7 @@ void *process_transaction(void* arg) {
 
 void file_mode(){
     pthread_barrier_init(&barrier, NULL, NUM_WORKERS + 1);
-    
+
     if (pipe(pipe_fd) == -1) {
         perror("Pipe creation failed");
         exit(EXIT_FAILURE);
