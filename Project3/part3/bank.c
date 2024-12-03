@@ -114,6 +114,7 @@ void *update_balance(void* arg){
 
         // Wait until signal to update
         while (!update_ready) {
+            printf("BANK: %d\n", total_transactions);
             printf("BANK: waiting cond wait\n");
             pthread_cond_wait(&cond, &process_transaction_lock);
             printf("BANK: after cond wait\n");
