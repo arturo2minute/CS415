@@ -7,16 +7,6 @@
 #include <sys/wait.h>
 #include "string_parser.h"
 
-pthread_barrier_t barrier;          // Barrier for thread synchronization
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; // Mutex for shared data
-pthread_mutex_t process_transaction_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t update_transaction = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t pipe_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t cond = PTHREAD_COND_INITIALIZER;   // Condition variable for communication
-
-int processed_transactions = 0;    // Shared counter for processed transactions
-int update_ready = 0;              // Flag to indicate bank thread can update balances
-
 #define NUM_WORKERS 10
 pthread_t *thread_ids;
 pthread_t bank_thread;
@@ -34,7 +24,6 @@ char *filename = "";
 int numbers[NUM_WORKERS] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
 int pipe_fd[2]; // Pipe for communication between Duck Bank and Auditor
-
 
 void print_accounts() {
     for (int i = 0; i < account_nums; i++) {
@@ -105,55 +94,23 @@ void auditor_process() {
 
 void *update_balance(void* arg){
     char log_entry[128];
+    for (int i = 0; i < account_nums; i++) {
+        pthread_mutex_lock(&(accounts[i].ac_lock));
 
-    while (1) {
-        pthread_mutex_lock(&process_transaction_lock);
-        
-        // Wait until the signal to update balances
-        while (processed_transactions < 5000) {
-            printf("Thread %d waiting on condition\n", *id);
-            pthread_cond_wait(&cond, &process_transaction_lock);
-            printf("Thread %d resumed after condition\n", *id);
-        }
+        double reward = accounts[i].transaction_tracter * accounts[i].reward_rate;
+        accounts[i].balance += reward;
+        accounts[i].transaction_tracter = 0.0;
 
-        // Reset the flag for the next cycle
-        processed_transactions = 0;
-        pthread_cond_broadcast(&cond); // Notify all workers
-        pthread_mutex_unlock(&process_transaction_lock);
+        pthread_mutex_unlock(&(accounts[i].ac_lock));
 
-        // Update account balances
-        for (int i = 0; i < account_nums; i++) {
-            pthread_mutex_lock(&(accounts[i].ac_lock));
-
-            double reward = accounts[i].transaction_tracter * accounts[i].reward_rate;
-            accounts[i].balance += reward;
-            accounts[i].transaction_tracter = 0.0;
-
-            pthread_mutex_unlock(&(accounts[i].ac_lock));
-
-            // Log applied interest to the pipe
-            time_t now = time(NULL);
-            snprintf(log_entry, sizeof(log_entry),
-                     "Applied Interest to account %s. New Balance: %.2f. Time of Update: %s",
-                     accounts[i].account_number, accounts[i].balance, ctime(&now));
-            write(pipe_fd[1], log_entry, strlen(log_entry));
-
-            // Write balance to act_#.txt
-            char filename[64];
-            snprintf(filename, sizeof(filename), "act_%d.txt", i);
-            FILE *outFPtr = fopen(filename, "a");
-            if (outFPtr != NULL) {
-                fprintf(outFPtr, "%.2f\n", accounts[i].balance);
-                fclose(outFPtr);
-            }
-        }
-
-        // Signal all worker threads to resume
-        pthread_mutex_lock(&process_transaction_lock);
-        update_ready = 0; // Reset the update_ready flag
-        pthread_cond_broadcast(&cond); // Notify all workers
-        pthread_mutex_unlock(&process_transaction_lock);
+        // Log applied interest to the pipe
+        time_t now = time(NULL);
+        snprintf(log_entry, sizeof(log_entry), 
+            "Applied Interest to account %s. New Balance: %.2f. Time of Update: %s", 
+            accounts[i].account_number, accounts[i].balance, ctime(&now));
+        write(pipe_fd[1], log_entry, strlen(log_entry));
     }
+
     pthread_exit(NULL);
 }
 
@@ -234,11 +191,6 @@ void *process_transaction(void* arg) {
                 src->balance -= transfer_amount;
                 dest->balance += transfer_amount;
                 src->transaction_tracter += transfer_amount;
-
-                // Update transactions
-                pthread_mutex_lock(&update_transaction);
-                processed_transactions++;
-                pthread_mutex_unlock(&update_transaction);
             }
 
             pthread_mutex_unlock(&(accounts[src_index].ac_lock));
@@ -269,7 +221,7 @@ void *process_transaction(void* arg) {
                 }
             }
 
-       	// Deposit
+        // Deposit
         } else if (strcmp(transaction_type, "D") == 0) {
             char *account_num = large_token_buffer.command_list[1];
             char *password = large_token_buffer.command_list[2];
@@ -291,15 +243,10 @@ void *process_transaction(void* arg) {
             if (acc && strcmp(acc->password, password) == 0) {
                 acc->balance += amount;
                 acc->transaction_tracter += amount;
-
-                // Update transactions
-                pthread_mutex_lock(&update_transaction);
-                processed_transactions++;
-                pthread_mutex_unlock(&update_transaction);
             }
             pthread_mutex_unlock(&(accounts[acc_index].ac_lock));
 
-      	// Withdraw
+        // Withdraw
         } else if (strcmp(transaction_type, "W") == 0) {
             char *account_num = large_token_buffer.command_list[1];
             char *password = large_token_buffer.command_list[2];
@@ -321,26 +268,10 @@ void *process_transaction(void* arg) {
             if (acc && strcmp(acc->password, password) == 0) {
                 acc->balance -= amount;
                 acc->transaction_tracter += amount;
-
-                // Update transactions
-                pthread_mutex_lock(&update_transaction);
-                processed_transactions++;
-                pthread_mutex_unlock(&update_transaction);
             }
             pthread_mutex_unlock(&(accounts[acc_index].ac_lock));
         }
         free_command_line(&large_token_buffer);
-
-        // Check if the threshold is reached
-        pthread_mutex_lock(&process_transaction_lock);
-        while (processed_transactions >= 5000) {
-            //printf("processed_transactions: %d\n", processed_transactions);
-            
-            pthread_cond_signal(&cond);
-            pthread_cond_wait(&cond, &process_transaction_lock);
-        }
-        pthread_mutex_unlock(&process_transaction_lock);
-
     }
 
     //free_command_line(&large_token_buffer);
@@ -351,9 +282,6 @@ void *process_transaction(void* arg) {
 
 
 void file_mode(){
-
-    // Initialize barrier
-    pthread_barrier_init(&barrier, NULL, NUM_WORKERS + 1);
 
     if (pipe(pipe_fd) == -1) {
         perror("Pipe creation failed");
@@ -375,20 +303,19 @@ void file_mode(){
         
     } else {
         close(pipe_fd[0]); // Close read end of the pipe in the Duck Bank process
+        //opening file to read
+        FILE *inFPtr;
+        inFPtr = fopen (filename, "r");
 
-    	//opening file to read
-    	FILE *inFPtr;
-    	inFPtr = fopen (filename, "r");
-
-    	if (inFPtr == NULL){
-    		const char *error_msg = "Error: Invalid file\n";
+        if (inFPtr == NULL){
+            const char *error_msg = "Error: Invalid file\n";
             write(STDOUT_FILENO, error_msg, strlen(error_msg));
-    		exit(0);
-    	}
+            exit(0);
+        }
 
-    	//declear line_buffer
-    	size_t len = 128;
-    	char* line_buf = malloc (len);
+        //declear line_buffer
+        size_t len = 128;
+        char* line_buf = malloc (len);
 
         // Read the first line to get the integer
         if (getline(&line_buf, &len, inFPtr) != -1) {
@@ -452,7 +379,7 @@ void file_mode(){
         // Find number of transactions per thread
         lines_per_threads = (total_lines - skipped_lines) / NUM_WORKERS;
 
-    	int line_num = 0;
+        int line_num = 0;
 
         // create thread, give job, and cast args to void pointer!
         thread_ids = malloc(NUM_WORKERS * sizeof(pthread_t));
@@ -461,7 +388,6 @@ void file_mode(){
             exit(EXIT_FAILURE);
         }
 
-        // Create worker threads
         for(int i = 0; i < NUM_WORKERS; i++){
             pthread_create(&thread_ids[i], NULL, process_transaction, (void*)&(numbers[i]));
         }
@@ -472,7 +398,7 @@ void file_mode(){
         }
 
         // Call Update Balance
-    	pthread_create(&bank_thread, NULL, update_balance, NULL);
+        pthread_create(&bank_thread, NULL, update_balance, NULL);
 
         // Wait for bank_thread
         pthread_join(bank_thread, NULL);
@@ -482,26 +408,24 @@ void file_mode(){
         // Print final balances to an output file
         print_final_balances("output.txt");
 
-    	// Close and free buffer and accounts
+        // Close and free buffer and accounts
         fclose(inFPtr);
-    	free(accounts);
-    	free (line_buf);
+        free(accounts);
+        free (line_buf);
         free(thread_ids);
         close(pipe_fd[1]); // Close write end of the pipe in the Duck Bank process
-
-        pthread_barrier_destroy(&barrier);
     }
 }
 
 int main(int argc, char *argv[]) {
-	// Check for file mode, or interactive mode
+    // Check for file mode, or interactive mode
     if (argc == 2){
         filename = argv[1];
-		file_mode();
+        file_mode();
     }else{
           fprintf(stderr, "Usage: %s filename\n", argv[0]);
           return EXIT_FAILURE;
     }
 
-	return EXIT_FAILURE;
+    return EXIT_FAILURE;
 }
