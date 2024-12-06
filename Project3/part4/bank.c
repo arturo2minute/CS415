@@ -151,8 +151,6 @@ void *update_balance(void* arg){
 
             pthread_mutex_unlock(&(accounts[i].ac_lock));
 
-
-
             // Log applied interest to the pipe
             time_t now = time(NULL);
             snprintf(log_entry, sizeof(log_entry), 
@@ -471,7 +469,7 @@ void file_mode(){
     int line_num = 0;
 
     // Shared memory mapping and copying
-        // Map shared memory
+    // Map shared memory
     size_t shared_mem_size = sizeof(account) * account_nums;
     shared_accounts = (account *)mmap(NULL, shared_mem_size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     memcpy(shared_accounts, accounts, shared_mem_size);
@@ -551,6 +549,7 @@ void file_mode(){
     // Close and free buffer and accounts
     fclose(inFPtr);
     free(accounts);
+    free(shared_accounts);
     free (line_buf);
     free(thread_ids);
     close(pipe_fd[1]); // Close write end of the pipe in the Duck Bank process
