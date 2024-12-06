@@ -471,7 +471,7 @@ void file_mode(){
                 // Create or update the savings file
                 char savings_file[128];
                 snprintf(savings_file, sizeof(savings_file), "savings/account_%s.txt", shared_accounts[i].account_number);
-                FILE *savings_fp = fopen(savings_file, "a");
+                FILE *savings_fp = fopen(savings_file, "w");
                 if (savings_fp) {
                     fprintf(savings_fp, "Balance: %.2f\n",shared_accounts[i].puddles_balance);
                     fclose(savings_fp);
