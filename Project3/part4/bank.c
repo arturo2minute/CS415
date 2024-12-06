@@ -14,6 +14,7 @@
 
 #define SHARED_MEM_SIZE 1024 * 1024  // 1 MB shared memory size
 #define SHARED_MEM_NAME "/duck_puddles_shared"
+void *shared_mem; // Declare shared_mem globally or locally within the scope
 
 pthread_mutex_t process_transaction_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t update_counters = PTHREAD_MUTEX_INITIALIZER;
