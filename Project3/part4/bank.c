@@ -7,6 +7,9 @@
 #include <sys/wait.h>
 #include "string_parser.h"
 
+#include <sys/mman.h> // For mmap, PROT_READ, PROT_WRITE, MAP_SHARED, MAP_ANONYMOUS
+#include <fcntl.h>    // For file control options, like O_CREAT, O_RDWR
+#include <unistd.h>   // For close, ftruncate
 account *shared_accounts = NULL;
 
 pthread_mutex_t process_transaction_lock = PTHREAD_MUTEX_INITIALIZER;
