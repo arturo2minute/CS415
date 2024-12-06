@@ -155,21 +155,6 @@ void *update_balance(void* arg){
 
             pthread_mutex_unlock(&(accounts[i].ac_lock));
 
-            snprintf(savings_file, sizeof(savings_file), "savings/account_%s.txt", accounts[i].account_number);
-            FILE *savings_fp = fopen(savings_file, "r+");
-            if (savings_fp) {
-                double savings_balance;
-                fscanf(savings_fp, "Balance: %lf", &savings_balance);
-
-                // Apply reward
-                savings_balance += savings_balance * 0.02;
-
-                // Write updated balance
-                rewind(savings_fp);
-                fprintf(savings_fp, "Balance: %.2f\nReward Rate: %.2f\n", savings_balance, 0.02);
-                fclose(savings_fp);
-            }
-
             // Log applied interest to the pipe
             time_t now = time(NULL);
             snprintf(log_entry, sizeof(log_entry), 
