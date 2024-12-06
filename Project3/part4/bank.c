@@ -44,8 +44,6 @@ char *filename = "";
 
 int numbers[NUM_WORKERS] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-int pipe_fd[2]; // Pipe for communication between Duck Bank and Auditor
-
 void print_accounts() {
     for (int i = 0; i < account_nums; i++) {
         printf("Account %d:\n", i);
@@ -91,32 +89,9 @@ int count_total_lines(FILE *file) {
     return line_count;
 }
 
-void auditor_process() {
-    close(pipe_fd[1]); // Close write end of the pipe in the Auditor process
-
-    FILE *ledger = fopen("ledger.txt", "w");
-    if (ledger == NULL) {
-        perror("Error opening ledger file");
-        exit(EXIT_FAILURE);
-    }
-
-    char buffer[256];
-    ssize_t bytes_read;
-    while ((bytes_read = read(pipe_fd[0], buffer, sizeof(buffer) - 1)) > 0) {
-        buffer[bytes_read] = '\0'; // Null-terminate the buffer
-        fprintf(ledger, "%s", buffer);
-        memset(buffer, 0, sizeof(buffer)); // Optional, but not strictly needed now
-    }
-
-    fclose(ledger);
-    close(pipe_fd[0]); // Close read end of the pipe in the Auditor process
-    exit(EXIT_SUCCESS);
-}
-
 void *update_balance(void* arg){
     pthread_barrier_wait(&barrier);
     //printf("BANK: Got past barrier\n");
-    char log_entry[128];
 
     while(1){
         pthread_mutex_lock(&process_transaction_lock);
@@ -152,13 +127,6 @@ void *update_balance(void* arg){
             }
 
             pthread_mutex_unlock(&(accounts[i].ac_lock));
-
-            // Log applied interest to the pipe
-            time_t now = time(NULL);
-            snprintf(log_entry, sizeof(log_entry), 
-                "Applied Interest to account %s. New Balance: %.2f. Time of Update: %s", 
-                accounts[i].account_number, accounts[i].balance, ctime(&now));
-            write(pipe_fd[1], log_entry, strlen(log_entry));
         }
 
         // Signal all worker threads to resume
@@ -282,14 +250,13 @@ void *process_transaction(void* arg) {
                     }
                 }
 
-                if (acc && strcmp(acc->password, password) == 0) {
-                    time_t now = time(NULL);
-                    char log_entry[128];
-                    snprintf(log_entry, sizeof(log_entry), 
-                        "Worker checked balance of Account %s. Balance: %.2f. Check occurred at %s", 
-                        acc->account_number, acc->balance, ctime(&now));
-                    write(pipe_fd[1], log_entry, strlen(log_entry));
-                }
+                // if (acc && strcmp(acc->password, password) == 0) {
+                //     time_t now = time(NULL);
+                //     char log_entry[128];
+                //     snprintf(log_entry, sizeof(log_entry), 
+                //         "Worker checked balance of Account %s. Balance: %.2f. Check occurred at %s", 
+                //         acc->account_number, acc->balance, ctime(&now));
+                // }
             }
 
         // Deposit
@@ -389,13 +356,6 @@ void *process_transaction(void* arg) {
 
 void file_mode(){
     pthread_barrier_init(&barrier, NULL, NUM_WORKERS + 1);
-
-    if (pipe(pipe_fd) == -1) {
-        perror("Pipe creation failed");
-        exit(EXIT_FAILURE);
-    }
-
-    close(pipe_fd[0]); // Close read end of the pipe in the Duck Bank process
 
     //opening file to read
     FILE *inFPtr;
@@ -557,7 +517,6 @@ void file_mode(){
     free(accounts);
     free (line_buf);
     free(thread_ids);
-    close(pipe_fd[1]); // Close write end of the pipe in the Duck Bank process
 
     // Cleanup
     munmap(shared_accounts, shared_mem_size);
