@@ -151,6 +151,8 @@ void *update_balance(void* arg){
 
             pthread_mutex_unlock(&(accounts[i].ac_lock));
 
+            kill(pid, SIGUSR1);
+
             // Log applied interest to the pipe
             time_t now = time(NULL);
             snprintf(log_entry, sizeof(log_entry), 
@@ -474,6 +476,11 @@ void file_mode(){
     shared_accounts = (account *)mmap(NULL, shared_mem_size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     memcpy(shared_accounts, accounts, shared_mem_size);
 
+    // Set up initial balances
+    for (int i = 0; i < account_nums; i++) {
+        shared_accounts[i].puddles_balance = accounts[i].balance * 0.20;
+    }
+
     // Fork
     pid_t pid = fork();
     if (pid == -1) {
@@ -482,6 +489,7 @@ void file_mode(){
     }
 
     if (pid == 0) {
+        mkdir("savings", 0777);
         // Sigwait
         sigset_t sigset;
         sigemptyset(&sigset);
@@ -540,8 +548,6 @@ void file_mode(){
 
     // Wait for bank_thread
     pthread_join(bank_thread, NULL);
-
-    kill(pid, SIGUSR1);
 
     // Print final balances to an output file
     print_final_balances("output.txt");
