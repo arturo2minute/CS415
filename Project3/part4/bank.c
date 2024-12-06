@@ -457,34 +457,38 @@ void file_mode(){
 
     if (pid == 0) {
         // This is the Puddles Bank process
-        // Close the unused write end of the pipe
-        close(pipe_fd[1]);
+        // Sigwait
+        sigset_t sigset;
+        sigemptyset(&sigset);
+        sigaddset(&sigset, SIGUSR1);
+        sigprocmask(SIG_BLOCK, &sigset, NULL);
+        int sig;
 
-        // Create the "savings" directory if it doesn't already exist
-        mkdir("savings", 0777);
+        account *shared_accounts = (account *)shared_mem; // Map shared memory as `account` array
 
-        // Shared memory mapping logic for Puddles Bank
-        char *shared_mem_ptr = (char *)shared_mem;
-        char *line = strtok(shared_mem_ptr, "\n");
-        while (line != NULL) {
-            char account_number[16], password[8];
-            double balance, reward_rate;
+        while(1){
+            sigwait(&sigset, &sig);
 
-            sscanf(line, "%s %s %lf %lf", account_number, password, &balance, &reward_rate);
 
-            // Initialize savings account
-            double savings_balance = balance * 0.2;
-            reward_rate = 0.02;
+            // Process each account in shared memory
+            for (int i = 0; i < account_nums; i++) {
+                double reward = shared_accounts[i].puddles_balance * shared_accounts[i].reward_rate;
 
-            char savings_file[128];
-            snprintf(savings_file, sizeof(savings_file), "savings/account_%s.txt", account_number);
-            FILE *savings_fp = fopen(savings_file, "w");
-            if (savings_fp) {
-                fprintf(savings_fp, "Balance: %.2f\nReward Rate: %.2f\n", savings_balance, reward_rate);
-                fclose(savings_fp);
+                // Apply the reward to the Puddles Bank savings balance
+                shared_accounts[i].puddles_balance += reward;
+
+                // Create or update the savings file
+                char savings_file[128];
+                snprintf(savings_file, sizeof(savings_file), "savings/account_%s.txt", shared_accounts[i].account_number);
+                FILE *savings_fp = fopen(savings_file, "w");
+                if (savings_fp) {
+                    fprintf(savings_fp, "Balance: %.2f\nReward Rate: %.2f\n",
+                            shared_accounts[i].puddles_balance, shared_accounts[i].reward_rate);
+                    fclose(savings_fp);
+                }
             }
 
-            line = strtok(NULL, "\n");
+
         }
 
         // Close and cleanup shared memory
