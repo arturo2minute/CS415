@@ -463,7 +463,7 @@ void file_mode(){
 
             // Process each account in shared memory
             for (int i = 0; i < account_nums; i++) {
-                double reward = shared_accounts[i].puddles_balance * 0.02;
+                double reward = shared_accounts[i].puddles_balance * shared_accounts[i].reward_rate;
 
                 // Apply the reward to the Puddles Bank savings balance
                 shared_accounts[i].puddles_balance += reward;
@@ -473,7 +473,8 @@ void file_mode(){
                 snprintf(savings_file, sizeof(savings_file), "savings/account_%s.txt", shared_accounts[i].account_number);
                 FILE *savings_fp = fopen(savings_file, "w");
                 if (savings_fp) {
-                    fprintf(savings_fp, "Balance: %.2f\n",shared_accounts[i].puddles_balance);
+                    fprintf(savings_fp, "Balance: %.2f\nReward Rate: %.2f\n",
+                            shared_accounts[i].puddles_balance, shared_accounts[i].reward_rate);
                     fclose(savings_fp);
                 }
             }
