@@ -151,8 +151,6 @@ void *update_balance(void* arg){
 
             pthread_mutex_unlock(&(accounts[i].ac_lock));
 
-            kill(pid, SIGUSR1);
-
             // Log applied interest to the pipe
             time_t now = time(NULL);
             snprintf(log_entry, sizeof(log_entry), 
@@ -489,7 +487,6 @@ void file_mode(){
     }
 
     if (pid == 0) {
-        mkdir("savings", 0777);
         // Sigwait
         sigset_t sigset;
         sigemptyset(&sigset);
