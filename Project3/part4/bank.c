@@ -515,7 +515,6 @@ void file_mode(){
 
         // Cleanup
         munmap(shared_accounts, shared_mem_size);
-        shm_unlink(SHARED_MEM_NAME);
 
         exit(EXIT_SUCCESS);
     }
@@ -556,7 +555,6 @@ void file_mode(){
 
     // Cleanup
     munmap(shared_accounts, shared_mem_size);
-    shm_unlink(SHARED_MEM_NAME);
     
 }
 
