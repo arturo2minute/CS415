@@ -5,6 +5,7 @@ typedef struct
 {
 	char account_number[17];
 	char password[9];
+    double puddles_balance;
     double balance;
     double reward_rate;
     

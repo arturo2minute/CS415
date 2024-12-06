@@ -155,6 +155,21 @@ void *update_balance(void* arg){
 
             pthread_mutex_unlock(&(accounts[i].ac_lock));
 
+            snprintf(savings_file, sizeof(savings_file), "savings/account_%s.txt", accounts[i].account_number);
+            FILE *savings_fp = fopen(savings_file, "r+");
+            if (savings_fp) {
+                double savings_balance;
+                fscanf(savings_fp, "Balance: %lf", &savings_balance);
+
+                // Apply reward
+                savings_balance += savings_balance * 0.02;
+
+                // Write updated balance
+                rewind(savings_fp);
+                fprintf(savings_fp, "Balance: %.2f\nReward Rate: %.2f\n", savings_balance, 0.02);
+                fclose(savings_fp);
+            }
+
             // Log applied interest to the pipe
             time_t now = time(NULL);
             snprintf(log_entry, sizeof(log_entry), 
@@ -395,23 +410,31 @@ void file_mode(){
 
 
 
-    // Create shared memory
+    // Determine the size of the shared memory required
+    size_t shared_mem_size = account_nums * sizeof(account);
+
+    // Allocate shared memory
     int shm_fd = shm_open(SHARED_MEM_NAME, O_CREAT | O_RDWR, 0666);
     if (shm_fd == -1) {
         perror("Failed to create shared memory");
         exit(EXIT_FAILURE);
     }
 
-    if (ftruncate(shm_fd, SHARED_MEM_SIZE) == -1) {
+    if (ftruncate(shm_fd, shared_mem_size) == -1) {
         perror("Failed to set size for shared memory");
         exit(EXIT_FAILURE);
     }
 
     // Map shared memory
-    void *shared_mem = mmap(NULL, SHARED_MEM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-    if (shared_mem == MAP_FAILED) {
+    account *shared_accounts = mmap(NULL, shared_mem_size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    if (shared_accounts == MAP_FAILED) {
         perror("Failed to map shared memory");
         exit(EXIT_FAILURE);
+    }
+
+    // Copy the accounts into shared memory
+    for (int i = 0; i < account_nums; i++) {
+        memcpy(&shared_accounts[i], &accounts[i], sizeof(account));
     }
 
 
@@ -441,7 +464,7 @@ void file_mode(){
 
         // Shared memory mapping logic for Puddles Bank
         char *shared_mem_ptr = (char *)shared_mem;
-        char *line = strtok(shared_mem_ptr, "\n");
+        char *line = strtok_r(shared_mem_ptr, "\n");
         while (line != NULL) {
             char account_number[16], password[8];
             double balance, reward_rate;
@@ -534,13 +557,28 @@ void file_mode(){
         // print_accounts();
 
 
-        char *shared_mem_ptr = (char *)shared_mem;
+        // Map shared memory
+        account *shared_accounts = mmap(NULL, shared_mem_size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+        if (shared_accounts == MAP_FAILED) {
+            perror("Failed to map shared memory");
+            exit(EXIT_FAILURE);
+        }
+
+        // Process each account in shared memory
         for (int i = 0; i < account_nums; i++) {
-            char account_data[128];
-            snprintf(account_data, sizeof(account_data), "%s %s %.2f %.3f\n",
-                     accounts[i].account_number, accounts[i].password, accounts[i].balance, accounts[i].reward_rate);
-            strcat(shared_mem_ptr, account_data);
-            shared_mem_ptr += strlen(account_data);
+            // Calculate initial Puddles Bank balance
+            shared_accounts[i].puddles_balance = shared_accounts[i].balance * 0.2;
+            shared_accounts[i].reward_rate = 0.02;  // Fixed reward rate
+
+            // Create a savings file for this account
+            char savings_file[128];
+            snprintf(savings_file, sizeof(savings_file), "savings/account_%s.txt", shared_accounts[i].account_number);
+            FILE *savings_fp = fopen(savings_file, "w");
+            if (savings_fp) {
+                fprintf(savings_fp, "Balance: %.2f\nReward Rate: %.2f\n",
+                        shared_accounts[i].puddles_balance, shared_accounts[i].reward_rate);
+                fclose(savings_fp);
+            }
         }
 
 
