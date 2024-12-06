@@ -435,12 +435,10 @@ void file_mode(){
         exit(EXIT_FAILURE);
     }
 
-    // Copy the accounts into shared memory
+    account *shared_mem_ptr = (account *)shared_mem; // Treat shared memory as an array of `account`
     for (int i = 0; i < account_nums; i++) {
-        memcpy(&shared_accounts[i], &accounts[i], sizeof(account));
+        memcpy(&shared_mem_ptr[i], &accounts[i], sizeof(account)); // Copy each account into shared memory
     }
-
-
 
 
     if (pipe(pipe_fd) == -1) {
@@ -469,8 +467,8 @@ void file_mode(){
         account *shared_accounts = (account *)shared_mem; // Map shared memory as `account` array
 
         while(1){
+            // Wait for a signal from Duck Bank
             sigwait(&sigset, &sig);
-
 
             // Process each account in shared memory
             for (int i = 0; i < account_nums; i++) {
@@ -489,8 +487,6 @@ void file_mode(){
                     fclose(savings_fp);
                 }
             }
-
-
         }
 
         // Close and cleanup shared memory
