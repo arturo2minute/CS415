@@ -7,6 +7,8 @@
 #include <sys/wait.h>
 #include "string_parser.h"
 
+#define SHARED_MEM_SIZE 1024 * 1024  // 1 MB shared memory size
+#define SHARED_MEM_NAME "/duck_puddles_shared"
 
 pthread_mutex_t process_transaction_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t update_counters = PTHREAD_MUTEX_INITIALIZER;
@@ -111,6 +113,7 @@ void *update_balance(void* arg){
     pthread_barrier_wait(&barrier);
     //printf("BANK: Got past barrier\n");
     char log_entry[128];
+    char savings_file[128];
 
     while(1){
         pthread_mutex_lock(&process_transaction_lock);
@@ -146,6 +149,21 @@ void *update_balance(void* arg){
             }
 
             pthread_mutex_unlock(&(accounts[i].ac_lock));
+
+            snprintf(savings_file, sizeof(savings_file), "savings/account_%s.txt", accounts[i].account_number);
+            FILE *savings_fp = fopen(savings_file, "r+");
+            if (savings_fp) {
+                double savings_balance;
+                fscanf(savings_fp, "Balance: %lf", &savings_balance);
+
+                // Apply reward
+                savings_balance += savings_balance * 0.02;
+
+                // Write updated balance
+                rewind(savings_fp);
+                fprintf(savings_fp, "Balance: %.2f\nReward Rate: %.2f\n", savings_balance, 0.02);
+                fclose(savings_fp);
+            }
 
             // Log applied interest to the pipe
             time_t now = time(NULL);
@@ -344,6 +362,7 @@ void *process_transaction(void* arg) {
             }
             pthread_mutex_unlock(&(accounts[acc_index].ac_lock));
         }
+
         free_command_line(&large_token_buffer);
 
         // Check if we need to pause processing
@@ -384,6 +403,30 @@ void *process_transaction(void* arg) {
 void file_mode(){
     pthread_barrier_init(&barrier, NULL, NUM_WORKERS + 1);
 
+
+
+    // Create shared memory
+    int shm_fd = shm_open(SHARED_MEM_NAME, O_CREAT | O_RDWR, 0666);
+    if (shm_fd == -1) {
+        perror("Failed to create shared memory");
+        exit(EXIT_FAILURE);
+    }
+
+    if (ftruncate(shm_fd, SHARED_MEM_SIZE) == -1) {
+        perror("Failed to set size for shared memory");
+        exit(EXIT_FAILURE);
+    }
+
+    // Map shared memory
+    void *shared_mem = mmap(NULL, SHARED_MEM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    if (shared_mem == MAP_FAILED) {
+        perror("Failed to map shared memory");
+        exit(EXIT_FAILURE);
+    }
+
+
+
+
     if (pipe(pipe_fd) == -1) {
         perror("Pipe creation failed");
         exit(EXIT_FAILURE);
@@ -399,8 +442,42 @@ void file_mode(){
     }
 
     if (pid == 0) {
-        // Auditor process
-        auditor_process();
+        // This is the Puddles Bank process
+        // Close the unused write end of the pipe
+        close(pipe_fd[1]);
+
+        // Create the "savings" directory if it doesn't already exist
+        mkdir("savings", 0777);
+
+        // Shared memory mapping logic for Puddles Bank
+        char *shared_mem_ptr = (char *)shared_mem;
+        char *line = strtok(shared_mem_ptr, "\n");
+        while (line != NULL) {
+            char account_number[16], password[8];
+            double balance, reward_rate;
+
+            sscanf(line, "%s %s %lf %lf", account_number, password, &balance, &reward_rate);
+
+            // Initialize savings account
+            double savings_balance = balance * 0.2;
+            reward_rate = 0.02;
+
+            char savings_file[128];
+            snprintf(savings_file, sizeof(savings_file), "savings/account_%s.txt", account_number);
+            FILE *savings_fp = fopen(savings_file, "w");
+            if (savings_fp) {
+                fprintf(savings_fp, "Balance: %.2f\nReward Rate: %.2f\n", savings_balance, reward_rate);
+                fclose(savings_fp);
+            }
+
+            line = strtok(NULL, "\n");
+        }
+
+        // Close and cleanup shared memory
+        munmap(shared_mem, SHARED_MEM_SIZE);
+        shm_unlink(SHARED_MEM_NAME);
+
+        exit(EXIT_SUCCESS);
         
     } else {
         close(pipe_fd[0]); // Close read end of the pipe in the Duck Bank process
@@ -466,6 +543,17 @@ void file_mode(){
         // // Print accounts for testing
         // print_accounts();
 
+
+        char *shared_mem_ptr = (char *)shared_mem;
+        for (int i = 0; i < account_nums; i++) {
+            char account_data[128];
+            snprintf(account_data, sizeof(account_data), "%s %s %.2f %.3f\n",
+                     accounts[i].account_number, accounts[i].password, accounts[i].balance, accounts[i].reward_rate);
+            strcat(shared_mem_ptr, account_data);
+            shared_mem_ptr += strlen(account_data);
+        }
+
+
         fclose(inFPtr);
 
         //opening file to read
@@ -515,6 +603,11 @@ void file_mode(){
         free (line_buf);
         free(thread_ids);
         close(pipe_fd[1]); // Close write end of the pipe in the Duck Bank process
+
+         // Clean up shared memory in parent process
+        munmap(shared_mem, SHARED_MEM_SIZE);
+        shm_unlink(SHARED_MEM_NAME);
+        
     }
 }
 
