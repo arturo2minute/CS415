@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include "account.h"
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include "string_parser.h"
 
 #include <sys/mman.h> // For mmap, PROT_READ, PROT_WRITE, MAP_SHARED, MAP_ANONYMOUS
