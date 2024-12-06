@@ -153,7 +153,7 @@ void *update_balance(void* arg){
 
             pthread_mutex_unlock(&(accounts[i].ac_lock));
 
-            printf("Sending Signal")
+            printf("Sending Signal");
             kill(pid, SIGUSR1);
 
             // Log applied interest to the pipe
