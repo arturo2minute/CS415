@@ -151,6 +151,8 @@ void *update_balance(void* arg){
 
             pthread_mutex_unlock(&(accounts[i].ac_lock));
 
+
+
             // Log applied interest to the pipe
             time_t now = time(NULL);
             snprintf(log_entry, sizeof(log_entry), 
@@ -541,7 +543,7 @@ void file_mode(){
     // Wait for bank_thread
     pthread_join(bank_thread, NULL);
 
-    //wait(NULL);
+    kill(pid, SIGUSR1);
 
     // Print final balances to an output file
     print_final_balances("output.txt");
