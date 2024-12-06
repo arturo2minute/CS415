@@ -135,6 +135,9 @@ void *update_balance(void* arg){
         update_ready = 0;
         processed_transactions = 0;
 
+        printf("Sending Signal");
+        kill(pid, SIGUSR1);
+
         for (int i = 0; i < account_nums; i++) {
             pthread_mutex_lock(&(accounts[i].ac_lock));
 
@@ -152,9 +155,6 @@ void *update_balance(void* arg){
             }
 
             pthread_mutex_unlock(&(accounts[i].ac_lock));
-
-            printf("Sending Signal");
-            kill(pid, SIGUSR1);
 
             // Log applied interest to the pipe
             time_t now = time(NULL);
@@ -399,6 +399,7 @@ void file_mode(){
     }
 
     close(pipe_fd[0]); // Close read end of the pipe in the Duck Bank process
+    
     //opening file to read
     FILE *inFPtr;
     inFPtr = fopen (filename, "r");
