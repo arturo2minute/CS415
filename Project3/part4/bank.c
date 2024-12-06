@@ -7,6 +7,11 @@
 #include <sys/wait.h>
 #include "string_parser.h"
 
+#include <sys/mman.h> // For mmap(), shm_open(), and related constants
+#include <fcntl.h>    // For O_CREAT, O_RDWR
+#include <sys/stat.h> // For mode constants like 0666
+#include <errno.h>    // For error handling with errno
+
 #define SHARED_MEM_SIZE 1024 * 1024  // 1 MB shared memory size
 #define SHARED_MEM_NAME "/duck_puddles_shared"
 
@@ -607,7 +612,7 @@ void file_mode(){
          // Clean up shared memory in parent process
         munmap(shared_mem, SHARED_MEM_SIZE);
         shm_unlink(SHARED_MEM_NAME);
-        
+
     }
 }
 
