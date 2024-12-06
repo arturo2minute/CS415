@@ -520,7 +520,6 @@ void file_mode(){
 
     // Cleanup
     munmap(shared_accounts, shared_mem_size);
-    free(shared_accounts);
     
 }
 
