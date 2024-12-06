@@ -120,23 +120,20 @@ void *update_balance(void* arg){
 
     while(1){
         pthread_mutex_lock(&process_transaction_lock);
-        printf("BANK: Locked transaction\n");
+        //printf("BANK: Locked transaction\n");
 
         // Wait until signal to update
         while (!update_ready) {
             //printf("BANK: %d\n", total_transactions);
             //printf("BANK: waiting cond wait\n");
             pthread_cond_wait(&cond, &process_transaction_lock);
-            printf("BANK: after cond wait\n");
+            //printf("BANK: after cond wait\n");
         }
         //printf("BANK: updating\n");
 
         // Update balances and reset counters
         update_ready = 0;
         processed_transactions = 0;
-
-        printf("Sending Signal");
-        kill(pid, SIGUSR1);
 
         for (int i = 0; i < account_nums; i++) {
             pthread_mutex_lock(&(accounts[i].ac_lock));
