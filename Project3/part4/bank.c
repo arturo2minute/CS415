@@ -250,13 +250,13 @@ void *process_transaction(void* arg) {
                     }
                 }
 
-                // if (acc && strcmp(acc->password, password) == 0) {
-                //     time_t now = time(NULL);
-                //     char log_entry[128];
-                //     snprintf(log_entry, sizeof(log_entry), 
-                //         "Worker checked balance of Account %s. Balance: %.2f. Check occurred at %s", 
-                //         acc->account_number, acc->balance, ctime(&now));
-                // }
+                if (acc && strcmp(acc->password, password) == 0) {
+                    time_t now = time(NULL);
+                    char log_entry[128];
+                    snprintf(log_entry, sizeof(log_entry), 
+                        "Worker checked balance of Account %s. Balance: %.2f. Check occurred at %s", 
+                        acc->account_number, acc->balance, ctime(&now));
+                }
             }
 
         // Deposit
@@ -520,6 +520,7 @@ void file_mode(){
 
     // Cleanup
     munmap(shared_accounts, shared_mem_size);
+    free(shared_accounts);
     
 }
 
