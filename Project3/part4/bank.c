@@ -497,6 +497,8 @@ void file_mode(){
         sigprocmask(SIG_BLOCK, &sigset, NULL);
         int sig;
 
+        mkdir("savings", 0777);
+
         while(1){
             // Wait for a signal from Duck Bank
             sigwait(&sigset, &sig);
