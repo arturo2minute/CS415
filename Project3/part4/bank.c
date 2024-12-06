@@ -7,6 +7,8 @@
 #include <sys/wait.h>
 #include "string_parser.h"
 
+account *shared_accounts = NULL;
+
 pthread_mutex_t process_transaction_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t update_counters = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
@@ -388,133 +390,163 @@ void file_mode(){
         exit(EXIT_FAILURE);
     }
 
+    close(pipe_fd[0]); // Close read end of the pipe in the Duck Bank process
+    //opening file to read
+    FILE *inFPtr;
+    inFPtr = fopen (filename, "r");
+
+    if (inFPtr == NULL){
+        const char *error_msg = "Error: Invalid file\n";
+        write(STDOUT_FILENO, error_msg, strlen(error_msg));
+        exit(0);
+    }
+
+    //declear line_buffer
+    size_t len = 128;
+    char* line_buf = malloc (len);
+
+    // Read the first line to get the integer
+    if (getline(&line_buf, &len, inFPtr) != -1) {
+        // Convert first line to an integer
+        account_nums = atoi(line_buf);
+
+        // Allocate memory for an array of `account` structs
+        accounts = (account *)malloc(account_nums * sizeof(account));
+        if (accounts == NULL) {
+            fprintf(stderr, "Error: Memory allocation failed\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // Loop to populate the accounts array (4 lines per account)
+    for (int i = 0; i < account_nums; i++) {
+        // Skip index line
+        getline(&line_buf, &len, inFPtr);
+
+        // Read account number
+        if (getline(&line_buf, &len, inFPtr) != -1) {
+            strncpy(accounts[i].account_number, line_buf, 16);
+            accounts[i].account_number[16] = '\0'; // Ensure null termination
+        }
+
+        // Read password
+        if (getline(&line_buf, &len, inFPtr) != -1) {
+            strncpy(accounts[i].password, line_buf, 8);
+            accounts[i].password[8] = '\0'; // Ensure null termination
+        }
+
+        // Read balance
+        if (getline(&line_buf, &len, inFPtr) != -1) {
+            accounts[i].balance = atof(line_buf);
+        }
+
+        // Read reward rate
+        if (getline(&line_buf, &len, inFPtr) != -1) {
+            accounts[i].reward_rate = atof(line_buf);
+        }
+
+        // Initialize other fields
+        accounts[i].transaction_tracter = 0.0;
+        pthread_mutex_init(&accounts[i].ac_lock, NULL);
+    }
+    fclose(inFPtr);
+
+    //opening file to read
+    inFPtr = fopen (filename, "r");
+
+    // Find the total lines in the file
+    total_lines = count_total_lines(inFPtr);
+
+    // Find number of skipped lines
+    skipped_lines = (account_nums * 5) + 1;
+
+    // Find number of transactions per thread
+    lines_per_threads = (total_lines - skipped_lines) / NUM_WORKERS;
+
+    int line_num = 0;
+
+    // Shared memory mapping and copying
+        // Map shared memory
+    size_t shared_mem_size = sizeof(account) * account_nums;
+    shared_accounts = (account *)mmap(NULL, shared_mem_size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    memcpy(shared_accounts, accounts, shared_mem_size);
+
     // Fork
     pid_t pid = fork();
-
-
     if (pid == -1) {
         perror("Fork failed");
         exit(EXIT_FAILURE);
     }
 
     if (pid == 0) {
-        // Auditor process
-        auditor_process();
-        
-    } else {
-        close(pipe_fd[0]); // Close read end of the pipe in the Duck Bank process
-        //opening file to read
-        FILE *inFPtr;
-        inFPtr = fopen (filename, "r");
+        // Sigwait
+        sigset_t sigset;
+        sigemptyset(&sigset);
+        sigaddset(&sigset, SIGUSR1);
+        sigprocmask(SIG_BLOCK, &sigset, NULL);
+        int sig;
 
-        if (inFPtr == NULL){
-            const char *error_msg = "Error: Invalid file\n";
-            write(STDOUT_FILENO, error_msg, strlen(error_msg));
-            exit(0);
-        }
+        while(1){
+            // Wait for a signal from Duck Bank
+            sigwait(&sigset, &sig);
 
-        //declear line_buffer
-        size_t len = 128;
-        char* line_buf = malloc (len);
+            // Process each account in shared memory
+            for (int i = 0; i < account_nums; i++) {
+                double reward = shared_accounts[i].puddles_balance * shared_accounts[i].reward_rate;
 
-        // Read the first line to get the integer
-        if (getline(&line_buf, &len, inFPtr) != -1) {
-            // Convert first line to an integer
-            account_nums = atoi(line_buf);
+                // Apply the reward to the Puddles Bank savings balance
+                shared_accounts[i].puddles_balance += reward;
 
-            // Allocate memory for an array of `account` structs
-            accounts = (account *)malloc(account_nums * sizeof(account));
-            if (accounts == NULL) {
-                fprintf(stderr, "Error: Memory allocation failed\n");
-                exit(EXIT_FAILURE);
-            }
-        }
-
-        // Loop to populate the accounts array (4 lines per account)
-        for (int i = 0; i < account_nums; i++) {
-            // Skip index line
-            getline(&line_buf, &len, inFPtr);
-
-            // Read account number
-            if (getline(&line_buf, &len, inFPtr) != -1) {
-                strncpy(accounts[i].account_number, line_buf, 16);
-                accounts[i].account_number[16] = '\0'; // Ensure null termination
+                // Create or update the savings file
+                char savings_file[128];
+                snprintf(savings_file, sizeof(savings_file), "savings/account_%s.txt", shared_accounts[i].account_number);
+                FILE *savings_fp = fopen(savings_file, "w");
+                if (savings_fp) {
+                    fprintf(savings_fp, "Balance: %.2f\nReward Rate: %.2f\n",
+                            shared_accounts[i].puddles_balance, shared_accounts[i].reward_rate);
+                    fclose(savings_fp);
+                }
             }
 
-            // Read password
-            if (getline(&line_buf, &len, inFPtr) != -1) {
-                strncpy(accounts[i].password, line_buf, 8);
-                accounts[i].password[8] = '\0'; // Ensure null termination
-            }
-
-            // Read balance
-            if (getline(&line_buf, &len, inFPtr) != -1) {
-                accounts[i].balance = atof(line_buf);
-            }
-
-            // Read reward rate
-            if (getline(&line_buf, &len, inFPtr) != -1) {
-                accounts[i].reward_rate = atof(line_buf);
-            }
-
-            // Initialize other fields
-            accounts[i].transaction_tracter = 0.0;
-            pthread_mutex_init(&accounts[i].ac_lock, NULL);
         }
 
-        // // Print accounts for testing
-        // print_accounts();
-
-        fclose(inFPtr);
-
-        //opening file to read
-        inFPtr = fopen (filename, "r");
-
-        // Find the total lines in the file
-        total_lines = count_total_lines(inFPtr);
-
-        // Find number of skipped lines
-        skipped_lines = (account_nums * 5) + 1;
-
-        // Find number of transactions per thread
-        lines_per_threads = (total_lines - skipped_lines) / NUM_WORKERS;
-
-        int line_num = 0;
-
-        // create thread, give job, and cast args to void pointer!
-        thread_ids = malloc(NUM_WORKERS * sizeof(pthread_t));
-        if (thread_ids == NULL) {
-            perror("Failed to allocate memory for thread IDs");
-            exit(EXIT_FAILURE);
-        }
-
-        for(int i = 0; i < NUM_WORKERS; i++){
-            pthread_create(&thread_ids[i], NULL, process_transaction, (void*)&(numbers[i]));
-        }
-
-        // Call Update Balance
-        pthread_create(&bank_thread, NULL, update_balance, NULL);
-
-        // wait on our threads to rejoin main thread
-        for (int j = 0; j < NUM_WORKERS; ++j){
-            pthread_join(thread_ids[j], NULL);
-        }
-
-        // Wait for bank_thread
-        pthread_join(bank_thread, NULL);
-
-        //wait(NULL);
-
-        // Print final balances to an output file
-        print_final_balances("output.txt");
-
-        // Close and free buffer and accounts
-        fclose(inFPtr);
-        free(accounts);
-        free (line_buf);
-        free(thread_ids);
-        close(pipe_fd[1]); // Close write end of the pipe in the Duck Bank process
+        exit(EXIT_SUCCESS);
     }
+
+    // create thread, give job, and cast args to void pointer!
+    thread_ids = malloc(NUM_WORKERS * sizeof(pthread_t));
+    if (thread_ids == NULL) {
+        perror("Failed to allocate memory for thread IDs");
+        exit(EXIT_FAILURE);
+    }
+
+    for(int i = 0; i < NUM_WORKERS; i++){
+        pthread_create(&thread_ids[i], NULL, process_transaction, (void*)&(numbers[i]));
+    }
+
+    // Call Update Balance
+    pthread_create(&bank_thread, NULL, update_balance, NULL);
+
+    // wait on our threads to rejoin main thread
+    for (int j = 0; j < NUM_WORKERS; ++j){
+        pthread_join(thread_ids[j], NULL);
+    }
+
+    // Wait for bank_thread
+    pthread_join(bank_thread, NULL);
+
+    //wait(NULL);
+
+    // Print final balances to an output file
+    print_final_balances("output.txt");
+
+    // Close and free buffer and accounts
+    fclose(inFPtr);
+    free(accounts);
+    free (line_buf);
+    free(thread_ids);
+    close(pipe_fd[1]); // Close write end of the pipe in the Duck Bank process
+    
 }
 
 int main(int argc, char *argv[]) {
