@@ -11,6 +11,7 @@
 #include <fcntl.h>    // For file control options, like O_CREAT, O_RDWR
 #include <unistd.h>   // For close, ftruncate
 account *shared_accounts = NULL;
+pid_t pid;
 
 pthread_mutex_t process_transaction_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t update_counters = PTHREAD_MUTEX_INITIALIZER;
@@ -150,6 +151,8 @@ void *update_balance(void* arg){
             }
 
             pthread_mutex_unlock(&(accounts[i].ac_lock));
+
+            kill(pid, SIGUSR1);
 
             // Log applied interest to the pipe
             time_t now = time(NULL);
@@ -480,7 +483,7 @@ void file_mode(){
     }
 
     // Fork
-    pid_t pid = fork();
+    pid = fork();
     if (pid == -1) {
         perror("Fork failed");
         exit(EXIT_FAILURE);
