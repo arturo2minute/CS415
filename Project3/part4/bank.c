@@ -16,6 +16,8 @@
 #define SHARED_MEM_NAME "/duck_puddles_shared"
 void *shared_mem; // Declare shared_mem globally or locally within the scope
 
+account *shared_accounts;
+
 pthread_mutex_t process_transaction_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t update_counters = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
@@ -427,7 +429,7 @@ void file_mode(){
     }
 
     // Map shared memory
-    account *shared_accounts = mmap(NULL, shared_mem_size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    shared_accounts = mmap(NULL, shared_mem_size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
     if (shared_accounts == MAP_FAILED) {
         perror("Failed to map shared memory");
         exit(EXIT_FAILURE);
