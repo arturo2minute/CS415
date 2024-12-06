@@ -399,7 +399,7 @@ void file_mode(){
     }
 
     close(pipe_fd[0]); // Close read end of the pipe in the Duck Bank process
-    
+
     //opening file to read
     FILE *inFPtr;
     inFPtr = fopen (filename, "r");
@@ -500,8 +500,6 @@ void file_mode(){
         sigprocmask(SIG_BLOCK, &sigset, NULL);
         int sig;
 
-        mkdir("savings", 0777);
-
         while(1){
             // Wait for a signal from Duck Bank
             sigwait(&sigset, &sig);
@@ -560,13 +558,13 @@ void file_mode(){
     // Close and free buffer and accounts
     fclose(inFPtr);
     free(accounts);
-    free(shared_accounts);
     free (line_buf);
     free(thread_ids);
     close(pipe_fd[1]); // Close write end of the pipe in the Duck Bank process
 
     // Cleanup
     munmap(shared_accounts, shared_mem_size);
+    free(shared_accounts);
     
 }
 
