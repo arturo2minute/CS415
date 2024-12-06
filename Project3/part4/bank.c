@@ -513,6 +513,10 @@ void file_mode(){
 
         }
 
+        // Cleanup
+        munmap(shared_accounts, shared_mem_size);
+        shm_unlink(SHARED_MEM_NAME);
+
         exit(EXIT_SUCCESS);
     }
 
@@ -549,6 +553,10 @@ void file_mode(){
     free (line_buf);
     free(thread_ids);
     close(pipe_fd[1]); // Close write end of the pipe in the Duck Bank process
+
+    // Cleanup
+    munmap(shared_accounts, shared_mem_size);
+    shm_unlink(SHARED_MEM_NAME);
     
 }
 
