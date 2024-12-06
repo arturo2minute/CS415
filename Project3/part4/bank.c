@@ -105,7 +105,7 @@ void *update_balance(void* arg){
             //printf("BANK: after cond wait\n");
         }
         //printf("BANK: updating\n");
-
+        kill(pid, SIGUSR1);
         // Update balances and reset counters
         update_ready = 0;
         processed_transactions = 0;
@@ -519,8 +519,6 @@ void file_mode(){
 
     // Cleanup
     munmap(shared_accounts, shared_mem_size);
-    free(shared_accounts);
-    
 }
 
 int main(int argc, char *argv[]) {
