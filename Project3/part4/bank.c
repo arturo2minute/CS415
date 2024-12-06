@@ -465,7 +465,7 @@ void file_mode(){
 
         // Shared memory mapping logic for Puddles Bank
         char *shared_mem_ptr = (char *)shared_mem;
-        char *line = strtok_r(shared_mem_ptr, "\n");
+        char *line = strtok(shared_mem_ptr, "\n");
         while (line != NULL) {
             char account_number[16], password[8];
             double balance, reward_rate;
